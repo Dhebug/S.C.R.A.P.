@@ -25,6 +25,10 @@ score=0
 total_score=0
 frame=0
 
+-- ui feedback
+warn_scroll=-1
+warn_text=""
+
 -- physics
 friction=0.995
 max_spd=2
@@ -113,6 +117,23 @@ function update_ship()
   elseif ship.item==2 and lv.has_cable then
    toggle_cable()
   end
+ end
+
+ -- warn on disabled controls
+ if (btnp(0) or btnp(1)) and not lv.has_rot
+ or (btnp(4) or btnp(5)) and not lv.has_items then
+  sfx(6)
+  if warn_scroll<-(#warn_text*4) then
+   local msg="cONTROL LOCKED FOR THIS TEST. pLEASE ONLY USE "
+   if lv.has_fwd then msg=msg.."UP/DOWN: THRUST/BRAKE " end
+   if lv.has_rot then msg=msg.."LEFT/RIGHT: ROTATE " end
+   if lv.has_items then msg=msg.."z: CYCLE x: USE " end
+   warn_text=msg
+   warn_scroll=128
+  end
+ end
+ if warn_scroll>=-(#warn_text*4) then
+  warn_scroll-=1
  end
 
  -- apply friction
@@ -488,7 +509,7 @@ levels={
  -- level 1: straight ahead
  {
   title="straight ahead",
-  brief="navigate from point a\nto the landing zone in\na straight line.\n\nsimple, right?\n\nscam believes in you.\nmostly.",
+  brief="nAVIGATE FROM POINT a\nTO THE LANDING ZONE IN\nA STRAIGHT LINE.\n\nsIMPLE, RIGHT?\n\ns.c.a.m. BELIEVES IN YOU.\nmOSTLY.",
   has_fwd=true,
   has_rot=false,
   has_items=false,
@@ -506,7 +527,7 @@ levels={
  -- level 2: turn around
  {
   title="turn around",
-  brief="the landing zone isn't\nalways in front of you.\n\ntime to learn how to\nturn.\n\ntry not to get dizzy.",
+  brief="tHE LANDING ZONE ISN'T\nALWAYS IN FRONT OF YOU.\n\ntIME TO LEARN HOW TO\nTURN.\n\ntRY NOT TO GET DIZZY.",
   has_fwd=true,
   has_rot=true,
   has_items=false,
@@ -524,7 +545,7 @@ levels={
  -- level 3: clear the path
  {
   title="clear the path",
-  brief="sometimes the trash is\nin the way.\n\nthat's why we gave you\na laser.\n\nplease don't point it\nat coworkers.",
+  brief="sOMETIMES THE TRASH IS\nIN THE WAY.\n\ntHAT'S WHY WE GAVE YOU\nA LASER.\n\npLEASE DON'T POINT IT\nAT COWORKERS.",
   has_fwd=true,
   has_rot=true,
   has_items=true,
@@ -545,7 +566,7 @@ levels={
  -- level 4: tow the line
  {
   title="tow the line",
-  brief="not everything is trash.\nsome things are valuable\ntrash.\n\nuse the tow cable to\nhaul debris to the\ncollection zone.\n\nthen land safely.",
+  brief="nOT EVERYTHING IS TRASH.\nsOME THINGS ARE VALUABLE\nTRASH.\n\nuSE THE TOW CABLE TO\nHAUL DEBRIS TO THE\nCOLLECTION ZONE.\n\ntHEN LAND SAFELY.",
   has_fwd=true,
   has_rot=true,
   has_items=true,
@@ -863,6 +884,7 @@ function update_intro()
  end
  -- start game with up/down/o/x
  if intro_timer>60 and (btnp(2) or btnp(3) or btnp(4) or btnp(5)) then
+  sfx(7)
   lvl=1
   total_score=0
   state=st_brief
@@ -916,6 +938,7 @@ end
 function update_brief()
  brief_timer+=1
  if brief_timer>30 and any_btnp() then
+  sfx(7)
   start_level()
  end
 end
@@ -1025,7 +1048,20 @@ function draw_play()
 
  -- level 4: debris status
  if lvl==4 and #debris>0 then
-  print("cargo: "..#debris.." left",40,120,6)
+  print("CARGO: "..#debris.." LEFT",40,120,6)
+ end
+
+ -- disabled controls warning scroll
+ if warn_scroll>=-(#warn_text*4) then
+  local y=120
+  for dx=-1,1 do
+   for dy=-1,1 do
+    if dx!=0 or dy!=0 then
+     print(warn_text,warn_scroll+dx,y+dy,0)
+    end
+   end
+  end
+  print(warn_text,warn_scroll,y,8)
  end
 end
 
@@ -1036,6 +1072,7 @@ function update_success()
  success_timer+=1
  update_particles()
  if success_timer>60 and any_btnp() then
+  sfx(7)
   if lvl>=max_lvl then
    -- game complete!
    state=st_namein
@@ -1057,8 +1094,8 @@ function draw_success()
  draw_panel(20,40,108,80)
 
  coprint("test passed!",46,11,0)
- print("score: +"..score,38,56,7)
- print("total: "..total_score,38,64,13)
+ print("SCORE: +"..score,38,56,7)
+ print("TOTAL: "..total_score,38,64,13)
 
  if success_timer>60 and flr(frame/15)%2==0 then
   coprint("engage controls",72,11,0)
@@ -1090,15 +1127,15 @@ function draw_fail()
  coprint("test failed!",41,8,0)
 
  if ship.fuel<=0 then
-  cprint("out of fuel",52,7)
+  cprint("OUT OF FUEL",52,7)
  else
-  cprint("ship destroyed",52,7)
+  cprint("SHIP DESTROYED",52,7)
  end
 
  spr(4,44,67)
- print(": retry",53,68,11)
+ print(": RETRY",53,68,11)
  spr(5,44,77)
- print(": abort",53,78,8)
+ print(": ABORT",53,78,8)
 end
 
 -------------------------------
@@ -1141,10 +1178,10 @@ function draw_namein()
   coprint("incomplete",44,8,0)
  end
 
- print("total score: "..total_score,28,56,7)
- print("level reached: "..lvl.."/"..max_lvl,24,64,7)
+ print("TOTAL SCORE: "..total_score,28,56,7)
+ print("LEVEL REACHED: "..lvl.."/"..max_lvl,24,64,7)
 
- print("enter your name:",28,76,6)
+ print("eNTER YOUR NAME:",28,76,6)
  for i=1,3 do
   local c=13
   if i==name_pos then c=11 end
@@ -1161,6 +1198,7 @@ end
 -------------------------------
 function update_scores()
  if any_btnp() then
+  sfx(7)
   state=st_intro
   intro_timer=0
  end
@@ -1173,7 +1211,7 @@ function draw_scores()
  coprint("hall of fame",24,13,0)
  line(20,32,108,32,13)
 
- print("name  score  level",24,38,6)
+ print("NAME  SCORE  LEVEL",24,38,6)
  line(20,45,108,45,5)
 
  for i=1,min(#hi_names,5) do
@@ -1186,7 +1224,7 @@ function draw_scores()
  end
 
  if #hi_names==0 then
-  print("no records yet",30,60,5)
+  print("NO RECORDS YET",30,60,5)
  end
 
  if flr(frame/15)%2==0 then
@@ -1340,3 +1378,5 @@ __sfx__
 000300001865018650186001860018600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000000000000
 000400002405024050210501e0501b050180501505012050100500e0500c0500a0500805006050040500205000050000500005000050000500005000050000500005000050000500005000050000000000000000
 000300000075003750067500975006750037500075000750007500075000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000000000000000
+000200001035010350103501035010350103500e3500e3500e3500e3500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000800001805018050240500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

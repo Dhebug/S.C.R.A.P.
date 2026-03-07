@@ -82,6 +82,32 @@ After completing (or failing) all levels, the player enters a 3-letter name and 
 - Total score
 - Highest level reached
 
+### Assets
+
+#### Sprites
+
+| ID | Description |
+|----|-------------|
+| 0 | Up arrow icon |
+| 1 | Down arrow icon |
+| 2 | Left arrow icon |
+| 3 | Right arrow icon |
+| 4 | Z key icon (rounded key cap) |
+| 5 | X key icon (rounded key cap) |
+
+#### Sound Effects
+
+| ID | Description |
+|----|-------------|
+| 0 | Bullet hit (obstacle damaged) |
+| 1 | Ship explosion (crash/death) |
+| 2 | Laser fire |
+| 3 | UI click (item cycle, cable toggle, level start) |
+| 4 | Obstacle/debris destroyed |
+| 5 | Cable detach |
+| 6 | Error buzzer (disabled control pressed) |
+| 7 | UI confirm bloop (engage controls) |
+
 ### Game Jam Modifiers
 
 The game jam offers optional modifiers for extra points. Here are the ones that apply to S.C.R.A.P.:
