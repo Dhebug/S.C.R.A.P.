@@ -29,6 +29,9 @@ frame=0
 friction=0.995
 max_spd=2
 
+-- controls
+reverse_rot=true -- true=left steers left (ship rotates cw), false=direct
+
 -------------------------------
 -- ship
 -------------------------------
@@ -82,18 +85,17 @@ function update_ship()
   ship.thrust_b=1
  end
 
- -- rotate left
+ -- rotate
+ local rdir=reverse_rot and 1 or -1
  if btn(0) and lv.has_rot and ship.fuel>0 then
-  ship.ang-=rpwr
+  ship.ang+=rpwr*rdir
   ship.fuel-=0.05
-  ship.thrust_l=1
+  if reverse_rot then ship.thrust_r=1 else ship.thrust_l=1 end
  end
-
- -- rotate right
  if btn(1) and lv.has_rot and ship.fuel>0 then
-  ship.ang+=rpwr
+  ship.ang-=rpwr*rdir
   ship.fuel-=0.05
-  ship.thrust_r=1
+  if reverse_rot then ship.thrust_l=1 else ship.thrust_r=1 end
  end
 
  -- item cycle (o button)
@@ -189,13 +191,13 @@ function draw_ship()
   pset(fx,fy,9)
  end
  if ship.thrust_l>0 then
-  local sx=x+cos(a+0.25)*(4+rnd(2))
-  local sy=y+sin(a+0.25)*(4+rnd(2))
+  local sx=x+cos(a-0.25)*(4+rnd(2))
+  local sy=y+sin(a-0.25)*(4+rnd(2))
   pset(sx,sy,9)
  end
  if ship.thrust_r>0 then
-  local sx=x+cos(a-0.25)*(4+rnd(2))
-  local sy=y+sin(a-0.25)*(4+rnd(2))
+  local sx=x+cos(a+0.25)*(4+rnd(2))
+  local sy=y+sin(a+0.25)*(4+rnd(2))
   pset(sx,sy,9)
  end
 
@@ -585,6 +587,38 @@ function draw_hud()
 end
 
 -------------------------------
+-- input helpers
+-------------------------------
+-- tracks "press then release" cycle
+-- returns true only on the frame
+-- all buttons are released after
+-- at least one was pressed
+wait_release=false
+
+function any_btn()
+ return btn(0) or btn(1) or btn(2) or btn(3) or btn(4) or btn(5)
+end
+
+function any_btnp()
+ if wait_release then
+  if not any_btn() then
+   wait_release=false
+   return true
+  end
+  return false
+ else
+  if any_btn() then
+   wait_release=true
+  end
+  return false
+ end
+end
+
+function reset_btnp()
+ wait_release=false
+end
+
+-------------------------------
 -- game state management
 -------------------------------
 intro_timer=0
@@ -686,14 +720,24 @@ end
 -- main pico-8 callbacks
 -------------------------------
 function _init()
+ cartdata("scrap_scam_2126")
  init_stars()
  load_scores()
+ reverse_rot=dget(30)!=1 -- default true unless explicitly set to 1 (direct)
  state=st_intro
  intro_timer=0
 end
 
+prev_state=-1
+
 function _update60()
  frame+=1
+
+ -- reset input on state change
+ if state!=prev_state then
+  reset_btnp()
+  prev_state=state
+ end
 
  if state==st_intro then
   update_intro()
@@ -738,7 +782,14 @@ end
 -------------------------------
 function update_intro()
  intro_timer+=1
- if intro_timer>60 and btnp(4) or btnp(5) then
+ -- toggle rotation mode with left/right
+ if intro_timer>60 and (btnp(0) or btnp(1)) then
+  reverse_rot=not reverse_rot
+  dset(30,reverse_rot and 0 or 1)
+  sfx(3)
+ end
+ -- start game with up/down/o/x
+ if intro_timer>60 and (btnp(2) or btnp(3) or btnp(4) or btnp(5)) then
   lvl=1
   total_score=0
   state=st_brief
@@ -748,31 +799,32 @@ end
 
 function draw_intro()
  -- logo
- local y=30
  local c=7
  if intro_timer<30 then
   c=flr(intro_timer/4)%2==0 and 7 or 0
  end
 
- -- big title
- print("   ___  ___ ___    _   ___",14,y,c)
- print("  / __|/ __| _ \\  /_\\ | _ \\",12,y+7,c)
- print("  \\__ \\ (_||   / / _ \\|  _/",12,y+14,c)
- print("  |___/\\___|_|_\\/_/ \\_\\_|",14,y+21,c)
+ -- ascii art (all at x=14 for alignment)
+ print("   ___  ___ ___    _   ___",14,10,c)
+ print("  / __|/ __| _ \\  /_\\ | _ \\",14,17,c)
+ print("  \\__ \\ (_||   / / _ \\|  _/",14,24,c)
+ print("  |___/\\___|_|_\\/_/ \\_\\_|",14,31,c)
 
  if intro_timer>20 then
-  print("space cleaning rules",24,y+35,13)
-  print("  and procedures",32,y+42,13)
+  print("space cleaning rules",24,46,13)
+  print("and procedures",32,54,13)
+ end
+
+ if intro_timer>60 then
+  local mode=reverse_rot and "steering" or "direct"
+  print("<> rotation: "..mode,18,84,6)
+  if flr(frame/15)%2==0 then
+   print("engage controls",28,98,11)
+  end
  end
 
  if intro_timer>40 then
-  print("(c) 2126 s.c.a.m.",28,y+56,5)
-  print("space cleaning advanced",16,y+63,5)
-  print("     management",36,y+70,5)
- end
-
- if intro_timer>60 and flr(frame/15)%2==0 then
-  print("press any button",28,115,11)
+  print("(c) 2126 s.c.a.m.",28,120,5)
  end
 end
 
@@ -781,7 +833,7 @@ end
 -------------------------------
 function update_brief()
  brief_timer+=1
- if brief_timer>30 and (btnp(4) or btnp(5)) then
+ if brief_timer>30 and any_btnp() then
   start_level()
  end
 end
@@ -814,7 +866,7 @@ function draw_brief()
  end
 
  if brief_timer>30 and flr(frame/15)%2==0 then
-  print("press button to start",18,112,11)
+  print("engage controls",18,112,11)
  end
 end
 
@@ -895,7 +947,7 @@ end
 function update_success()
  success_timer+=1
  update_particles()
- if success_timer>60 and (btnp(4) or btnp(5)) then
+ if success_timer>60 and any_btnp() then
   if lvl>=max_lvl then
    -- game complete!
    state=st_namein
@@ -922,7 +974,7 @@ function draw_success()
  print("total: "..total_score,38,64,13)
 
  if success_timer>60 and flr(frame/15)%2==0 then
-  print("press button",40,72,6)
+  print("engage controls",40,72,6)
  end
 end
 
@@ -1020,7 +1072,7 @@ end
 -- highscore state
 -------------------------------
 function update_scores()
- if btnp(4) or btnp(5) then
+ if any_btnp() then
   state=st_intro
   intro_timer=0
  end
@@ -1051,7 +1103,7 @@ function draw_scores()
  end
 
  if flr(frame/15)%2==0 then
-  print("press button",32,110,6)
+  print("engage controls",32,110,6)
  end
 end
 
