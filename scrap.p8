@@ -20,7 +20,7 @@ st_namein=6
 
 state=st_intro
 lvl=1
-max_lvl=4
+max_lvl=6
 score=0
 total_score=0
 frame=0
@@ -50,12 +50,12 @@ menu_sel=0 -- 0=rotation, 1=difficulty
 -------------------------------
 ship={}
 
-function init_ship(x,y,ang)
+function init_ship(x,y,ang,fuel)
  ship={
   x=x,y=y,
   dx=0,dy=0,
   ang=ang or 0,
-  fuel=100,
+  fuel=fuel or 50,
   thrust_f=0, -- forward visual
   thrust_b=0, -- brake visual
   thrust_l=0, -- left visual
@@ -326,7 +326,7 @@ function update_bullets()
    for ob in all(obstacles) do
     local ddx=b.x-ob.x
     local ddy=b.y-ob.y
-    if ddx*ddx+ddy*ddy<ob.r*ob.r then
+    if abs(ddx)<=ob.r and abs(ddy)<=ob.r and ddx*ddx+ddy*ddy<ob.r*ob.r then
      ob.hp-=1
      del(bullets,b)
      if #bullets==0 then sfx(-1,1) end
@@ -395,6 +395,7 @@ end
 obstacles={}
 debris={}
 drop_zone=nil
+fuel_pods={}
 
 function update_obstacles()
  for ob in all(obstacles) do
@@ -461,6 +462,30 @@ function draw_debris()
 end
 
 -------------------------------
+-- fuel pods
+-------------------------------
+function update_fuel_pods()
+ for f in all(fuel_pods) do
+  local ddx=ship.x-f.x
+  local ddy=ship.y-f.y
+  if abs(ddx)<=8 and abs(ddy)<=8 and ddx*ddx+ddy*ddy<64 then
+   ship.fuel=min(100,ship.fuel+f.amt)
+   del(fuel_pods,f)
+   sfx(4)
+  end
+ end
+end
+
+function draw_fuel_pods()
+ for f in all(fuel_pods) do
+  local pulse=sin(frame/20)*1
+  circfill(f.x,f.y,3+pulse,11)
+  circfill(f.x,f.y,2+pulse,3)
+  print("+",f.x-2,f.y-2,7)
+ end
+end
+
+-------------------------------
 -- particles
 -------------------------------
 particles={}
@@ -489,8 +514,20 @@ end
 -------------------------------
 land={}
 
+function diff_radius(r)
+ -- shrink zones on harder difficulties
+ local shrink={1,0.85,0.7,0.55}
+ return r*shrink[difficulty+1]
+end
+
+function diff_hp(hp)
+ -- more hits on harder difficulties
+ local mult={1,1,2,3}
+ return hp*mult[difficulty+1]
+end
+
 function init_land(x,y,r)
- land={x=x,y=y,r=r or 8}
+ land={x=x,y=y,r=diff_radius(r or 8)}
 end
 
 function check_landing()
@@ -604,12 +641,13 @@ levels={
   has_items=false,
   has_cable=false,
   setup=function()
-   init_ship(20,64,0)
+   init_ship(20,64,0,30)
    init_land(250,64)
    obstacles={}
    debris={}
    bullets={}
    drop_zone=nil
+   fuel_pods={}
    ship.ammo=0
   end
  },
@@ -622,12 +660,13 @@ levels={
   has_items=false,
   has_cable=false,
   setup=function()
-   init_ship(64,200,0)
+   init_ship(64,200,0,40)
    init_land(200,40)
    obstacles={}
    debris={}
    bullets={}
    drop_zone=nil
+   fuel_pods={}
    ship.ammo=0
   end
  },
@@ -640,14 +679,15 @@ levels={
   has_items=true,
   has_cable=false,
   setup=function()
-   init_ship(20,100,0)
+   init_ship(20,100,0,50)
    init_land(280,100)
    obstacles={
-    {x=150,y=100,r=10,hp=3,dx=0,dy=0}
+    {x=150,y=100,r=10,hp=diff_hp(3),dx=0,dy=0}
    }
    debris={}
    bullets={}
    drop_zone=nil
+   fuel_pods={}
    ship.ammo=10
    ship.item=1
   end
@@ -661,16 +701,71 @@ levels={
   has_items=true,
   has_cable=true,
   setup=function()
-   init_ship(20,200,0)
+   init_ship(20,200,0,55)
    init_land(280,40)
    obstacles={
-    {x=180,y=120,r=8,hp=2,dx=0,dy=0}
+    {x=180,y=120,r=8,hp=diff_hp(2),dx=0,dy=0}
    }
    debris={
     {x=100,y=80,dx=0,dy=0,collected=false}
    }
-   drop_zone={x=250,y=200,r=14}
+   drop_zone={x=250,y=200,r=diff_radius(14)}
    bullets={}
+   fuel_pods={}
+   ship.ammo=10
+   ship.item=1
+  end
+ },
+ -- level 5: bulk collection
+ {
+  title="bulk order",
+  brief="s.c.a.m. HAS RECEIVED A\nBULK ORDER.\n\ncOLLECT ALL CARGO AND\nDELIVER TO THE DROP ZONE.\n\nOVERTIME IS NOT\nCOMPENSATED.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=true,
+  setup=function()
+   init_ship(20,150,0,65)
+   init_land(350,150)
+   obstacles={
+    {x=120,y=80,r=8,hp=diff_hp(2),dx=0,dy=0},
+    {x=250,y=200,r=10,hp=diff_hp(3),dx=0,dy=0}
+   }
+   debris={
+    {x=80,y=50,dx=0,dy=0,collected=false},
+    {x=180,y=250,dx=0,dy=0,collected=false},
+    {x=300,y=80,dx=0,dy=0,collected=false}
+   }
+   drop_zone={x=200,y=150,r=diff_radius(16)}
+   bullets={}
+   fuel_pods={}
+   ship.ammo=15
+   ship.item=1
+  end
+ },
+ -- level 6: long haul
+ {
+  title="the long haul",
+  brief="tHE LANDING ZONE IS FAR.\nvERY FAR.\n\nyOU WON'T HAVE ENOUGH\nFUEL. bUT S.C.A.M. LEFT\nSOME FUEL PODS ALONG\nTHE WAY.\n\npROBABLY.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=false,
+  setup=function()
+   init_ship(20,300,0,30)
+   init_land(500,50)
+   obstacles={
+    {x=150,y=200,r=12,hp=diff_hp(2),dx=0,dy=0},
+    {x=350,y=150,r=10,hp=diff_hp(3),dx=0,dy=0}
+   }
+   debris={}
+   bullets={}
+   drop_zone=nil
+   fuel_pods={
+    {x=100,y=250,amt=20},
+    {x=250,y=180,amt=20},
+    {x=400,y=100,amt=15}
+   }
    ship.ammo=10
    ship.item=1
   end
@@ -935,7 +1030,7 @@ function _init()
  intro_cycle=0
  intro_page=0
  --cheat: uncomment to skip to a level
- --state=st_brief lvl=4
+ --state=st_brief lvl=6
 end
 
 prev_state=-1
@@ -1207,12 +1302,13 @@ function update_play()
  update_bullets()
  update_obstacles()
  update_debris()
+ update_fuel_pods()
  update_particles()
 
  -- check success
  if ship.alive then
-  -- for level 4, need all debris collected first
-  if lvl==4 and #debris>0 then
+  -- need all debris collected before landing
+  if #debris>0 and drop_zone then
    -- can't land yet
   else
    if check_landing() then
@@ -1293,6 +1389,7 @@ function draw_play()
  draw_land()
  draw_obstacles()
  draw_debris()
+ draw_fuel_pods()
  draw_ship()
  draw_bullets()
  draw_particles()
@@ -1311,6 +1408,9 @@ function draw_play()
  if drop_zone then
   draw_indicator(drop_zone.x,drop_zone.y,9,4)
  end
+ for f in all(fuel_pods) do
+  draw_indicator(f.x,f.y,11,3)
+ end
 
  draw_hud()
 
@@ -1320,8 +1420,8 @@ function draw_play()
   cprint("LANDING "..pct.."%",58,11)
  end
 
- -- level 4: debris status
- if lvl==4 and #debris>0 then
+ -- debris status
+ if drop_zone and #debris>0 then
   print("CARGO: "..#debris.." LEFT",40,120,6)
  end
 

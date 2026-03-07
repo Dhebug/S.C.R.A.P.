@@ -66,6 +66,18 @@ Each level is a training test with:
 - **Objective:** Use tow cable to drag debris to collection zone, clear remaining obstacles with laser, reach landing zone
 - **Fail condition:** Run out of fuel, crash, lose the cargo, or run out of ammo
 
+#### Level 5 - "Bulk Order"
+- **Briefing:** "S.C.A.M. has received a bulk order. Collect all cargo and deliver to the drop zone. Overtime is not compensated."
+- **Controls:** All thrusters + Laser + Tow cable
+- **Objective:** Collect 3 cargo boxes and deliver them to the drop zone, then land
+- **Fail condition:** Run out of fuel, crash, or lose cargo
+
+#### Level 6 - "The Long Haul"
+- **Briefing:** "The landing zone is far. Very far. You won't have enough fuel. But S.C.A.M. left some fuel pods along the way. Probably."
+- **Controls:** All thrusters + Laser
+- **Objective:** Navigate to a distant landing zone, collecting fuel pods along the way to survive the journey
+- **Fail condition:** Run out of fuel or crash
+
 ### Difficulty
 
 Selectable from the title screen settings menu.
