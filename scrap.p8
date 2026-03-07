@@ -41,6 +41,9 @@ max_spd=2
 
 -- controls
 reverse_rot=true -- true=left steers left (ship rotates cw), false=direct
+difficulty=1 -- 0-3
+diff_names={"intern","employee","manager","ceo"}
+menu_sel=0 -- 0=rotation, 1=difficulty
 
 -------------------------------
 -- ship
@@ -71,6 +74,9 @@ function update_ship()
  if not ship.alive then return end
 
  local lv=levels[lvl]
+ -- difficulty: 0=intern,1=employee,2=manager,3=ceo
+ local fuel_mults={0.7,1.5,2.5,4}
+ local fuel_mult=fuel_mults[difficulty+1]
  local pwr=0.06
  local rpwr=0.02
  local bpwr=0.03
@@ -85,7 +91,7 @@ function update_ship()
  if btn(2) and lv.has_fwd and ship.fuel>0 then
   ship.dx+=cos(ship.ang)*pwr
   ship.dy+=sin(ship.ang)*pwr
-  ship.fuel-=0.15
+  ship.fuel-=0.15*fuel_mult
   ship.thrust_f=1
  end
 
@@ -93,7 +99,7 @@ function update_ship()
  if btn(3) and lv.has_fwd and ship.fuel>0 then
   ship.dx-=cos(ship.ang)*bpwr
   ship.dy-=sin(ship.ang)*bpwr
-  ship.fuel-=0.1
+  ship.fuel-=0.1*fuel_mult
   ship.thrust_b=1
  end
 
@@ -101,12 +107,12 @@ function update_ship()
  local rdir=reverse_rot and 1 or -1
  if btn(0) and lv.has_rot and ship.fuel>0 then
   ship.ang+=rpwr*rdir
-  ship.fuel-=0.05
+  ship.fuel-=0.05*fuel_mult
   if reverse_rot then ship.thrust_r=1 else ship.thrust_l=1 end
  end
  if btn(1) and lv.has_rot and ship.fuel>0 then
   ship.ang-=rpwr*rdir
-  ship.fuel-=0.05
+  ship.fuel-=0.05*fuel_mult
   if reverse_rot then ship.thrust_l=1 else ship.thrust_r=1 end
  end
 
@@ -797,6 +803,8 @@ end
 -- game state management
 -------------------------------
 intro_timer=0
+intro_cycle=0
+intro_show_scores=false
 brief_timer=0
 success_timer=0
 fail_timer=0
@@ -806,6 +814,7 @@ land_timer=0
 hi_names={}
 hi_scores={}
 hi_levels={}
+hi_diffs={}
 name_chars={1,1,1} -- a=1
 name_pos=1
 
@@ -813,16 +822,19 @@ function load_scores()
  hi_names={}
  hi_scores={}
  hi_levels={}
+ hi_diffs={}
  for i=0,4 do
-  local c1=dget(i*5)
-  local c2=dget(i*5+1)
-  local c3=dget(i*5+2)
-  local sc=dget(i*5+3)
-  local lv=dget(i*5+4)
+  local c1=dget(i*6)
+  local c2=dget(i*6+1)
+  local c3=dget(i*6+2)
+  local sc=dget(i*6+3)
+  local lv=dget(i*6+4)
+  local df=dget(i*6+5)
   if sc>0 then
    add(hi_names,chr(64+c1)..chr(64+c2)..chr(64+c3))
    add(hi_scores,sc)
    add(hi_levels,lv)
+   add(hi_diffs,df)
   end
  end
 end
@@ -830,11 +842,12 @@ end
 function save_scores()
  for i=1,min(#hi_names,5) do
   local n=hi_names[i]
-  dset((i-1)*5,ord(n,1)-64)
-  dset((i-1)*5+1,ord(n,2)-64)
-  dset((i-1)*5+2,ord(n,3)-64)
-  dset((i-1)*5+3,hi_scores[i])
-  dset((i-1)*5+4,hi_levels[i])
+  dset((i-1)*6,ord(n,1)-64)
+  dset((i-1)*6+1,ord(n,2)-64)
+  dset((i-1)*6+2,ord(n,3)-64)
+  dset((i-1)*6+3,hi_scores[i])
+  dset((i-1)*6+4,hi_levels[i])
+  dset((i-1)*6+5,hi_diffs[i])
  end
 end
 
@@ -850,27 +863,33 @@ function insert_score(name,sc,lv)
  local nn={}
  local ns={}
  local nl={}
+ local nd={}
  for i=1,pos-1 do
   add(nn,hi_names[i])
   add(ns,hi_scores[i])
   add(nl,hi_levels[i])
+  add(nd,hi_diffs[i])
  end
  add(nn,name)
  add(ns,sc)
  add(nl,lv)
+ add(nd,difficulty)
  for i=pos,#hi_names do
   add(nn,hi_names[i])
   add(ns,hi_scores[i])
   add(nl,hi_levels[i])
+  add(nd,hi_diffs[i])
  end
  hi_names=nn
  hi_scores=ns
  hi_levels=nl
+ hi_diffs=nd
  -- cap at 5
  while #hi_names>5 do
   hi_names[#hi_names]=nil
   hi_scores[#hi_scores]=nil
   hi_levels[#hi_levels]=nil
+  hi_diffs[#hi_diffs]=nil
  end
  save_scores()
 end
@@ -884,6 +903,7 @@ function start_level()
  land_timer=0
  fail_timer=0
  warn_scroll=-1
+ warn_text=""
  cam_ox=0
  cam_oy=0
  cam_x=ship.x-64
@@ -892,8 +912,10 @@ function start_level()
 end
 
 function calc_score()
- -- score based on fuel remaining and level
- return flr(ship.fuel*10+lvl*50)
+ -- score based on fuel remaining, level, and difficulty
+ local diff_mult={1,2,4,8}
+ local base=ship.fuel*10+lvl*50
+ return flr(base*diff_mult[difficulty+1])
 end
 
 -------------------------------
@@ -901,14 +923,19 @@ end
 -------------------------------
 function _init()
  cartdata("scrap_scam_2126")
+ --cheat: uncomment to clear all save data
+ --for i=0,63 do dset(i,0) end
  init_stars()
  load_scores()
  reverse_rot=dget(30)!=1 -- default true unless explicitly set to 1 (direct)
+ difficulty=flr(dget(31))%4
  star_dir=reverse_rot and 0 or 1
  state=st_intro
  intro_timer=0
+ intro_cycle=0
+ intro_show_scores=false
  --cheat: uncomment to skip to a level
- state=st_brief lvl=4
+ --state=st_brief lvl=4
 end
 
 prev_state=-1
@@ -967,18 +994,48 @@ scroll_pos=0
 
 function update_intro()
  if intro_timer<200 then intro_timer+=1 end
+ if intro_timer>=200 then
+  intro_cycle+=1
+  if intro_cycle>=300 and #hi_names>0 then
+   intro_show_scores=not intro_show_scores
+   intro_cycle=0
+  end
+ end
  scroll_pos+=0.8
  if scroll_pos>30000 then scroll_pos=0 end
  update_stars()
- -- toggle rotation mode with left/right
- if intro_timer>60 and (btnp(0) or btnp(1)) then
-  reverse_rot=not reverse_rot
-  star_dir=reverse_rot and 0 or 1
-  dset(30,reverse_rot and 0 or 1)
-  sfx(3)
+ if intro_timer>60 then
+  -- any input resets cycle timer and shows menu
+  if any_btnp() then
+   intro_cycle=0
+   if intro_show_scores then
+    intro_show_scores=false
+   end
+  end
+  -- menu navigation
+  if not intro_show_scores and btnp(2) then
+   menu_sel=max(0,menu_sel-1)
+   sfx(3)
+  end
+  if not intro_show_scores and btnp(3) then
+   menu_sel=min(1,menu_sel+1)
+   sfx(3)
+  end
+  -- change selected option
+  if not intro_show_scores and (btnp(0) or btnp(1)) then
+   if menu_sel==0 then
+    reverse_rot=not reverse_rot
+    star_dir=reverse_rot and 0 or 1
+    dset(30,reverse_rot and 0 or 1)
+   elseif menu_sel==1 then
+    difficulty=(difficulty+1)%4
+    dset(31,difficulty)
+   end
+   sfx(3)
+  end
  end
- -- start game with up/down/o/x
- if intro_timer>60 and (btnp(2) or btnp(3) or btnp(4) or btnp(5)) then
+ -- start game
+ if intro_timer>60 and (btnp(4) or btnp(5)) then
   sfx(7)
   lvl=1
   total_score=0
@@ -1000,20 +1057,23 @@ function draw_intro()
  print("\\__ \\ (_||   / / _ \\|  _/",c)
  print("|___/\\___|_|_\\/_/ \\_\\_|",c)
 
- -- cycle between title info and highscores
- local show_scores=intro_timer>200 and flr(frame/300)%2==1 and #hi_names>0
-
- if show_scores then
+ if intro_show_scores then
   -- show highscores
-  print("NAME  SCORE  LEVEL",24,38,6)
-  line(20,45,108,45,5)
+  local dlet={"i","e","m","c"}
+  print("name",24,48,6)
+  print("score",48,48,6)
+  print("lv",80,48,6)
+  print("df",100,48,6)
+  line(20,55,108,55,5)
   for i=1,min(#hi_names,5) do
-   local y=48+(i-1)*10
+   local y=58+(i-1)*10
    local c=7
    if i==1 then c=10 end
-   print(hi_names[i],28,y,c)
-   print(tostr(hi_scores[i]),56,y,c)
-   print(tostr(hi_levels[i]).."/"..max_lvl,92,y,c)
+   print(hi_names[i],24,y,c)
+   print(tostr(hi_scores[i]),48,y,c)
+   print(tostr(hi_levels[i]).."/"..max_lvl,76,y,c)
+   local di=flr(hi_diffs[i])%4+1
+   print(dlet[di],100,y,c)
   end
  else
   if intro_timer>80 then
@@ -1025,14 +1085,29 @@ function draw_intro()
   end
  end
 
- if intro_timer>60 then
-  local mode=reverse_rot and "steering" or "direct"
-  spr(2,22,73)
-  spr(3,31,73)
-  print("rotation: "..mode,41,74,6)
-  if flr(frame/15)%2==0 then
-   coprint("engage controls",98,11,0)
+ if intro_timer>60 and not intro_show_scores then
+  cprint("sETTINGS:",68,6)
+  -- rotation option
+  local rc=menu_sel==0 and 7 or 5
+  local rtxt="rotation: "..(reverse_rot and "steering" or "direct")
+  local rx=64-#rtxt*2
+  print(rtxt,rx,79,rc)
+  if menu_sel==0 then
+   spr(2,rx-10,78)
+   spr(3,rx+#rtxt*4+2,78)
   end
+  -- difficulty option
+  local dc=menu_sel==1 and 7 or 5
+  local dtxt="difficulty: "..diff_names[difficulty+1]
+  local ddx=64-#dtxt*2
+  print(dtxt,ddx,89,dc)
+  if menu_sel==1 then
+   spr(2,ddx-10,88)
+   spr(3,ddx+#dtxt*4+2,88)
+  end
+ end
+ if intro_timer>60 and flr(frame/30)%2==0 then
+  coprint("engage controls",114,11,0)
  end
 
  -- scrolling legal ticker
@@ -1095,7 +1170,7 @@ function draw_brief()
   print(":use",61,cy+1,13)
  end
 
- if brief_timer>30 and flr(frame/15)%2==0 then
+ if brief_timer>30 and flr(frame/30)%2==0 then
   coprint("engage controls",122,11,0)
  end
 end
@@ -1274,7 +1349,7 @@ function draw_success()
  print("SCORE: +"..score,38,56,7)
  print("TOTAL: "..total_score,38,64,13)
 
- if success_timer>60 and flr(frame/15)%2==0 then
+ if success_timer>60 and flr(frame/30)%2==0 then
   coprint("engage controls",72,11,0)
  end
 end
@@ -1327,28 +1402,34 @@ end
 -- name input state
 -------------------------------
 function update_namein()
- if btnp(2) then
-  name_chars[name_pos]+=1
-  if name_chars[name_pos]>26 then
-   name_chars[name_pos]=1
+ if name_pos<=3 then
+  if btnp(2) then
+   name_chars[name_pos]+=1
+   if name_chars[name_pos]>26 then
+    name_chars[name_pos]=1
+   end
+  end
+  if btnp(3) then
+   name_chars[name_pos]-=1
+   if name_chars[name_pos]<1 then
+    name_chars[name_pos]=26
+   end
   end
  end
- if btnp(3) then
-  name_chars[name_pos]-=1
-  if name_chars[name_pos]<1 then
-   name_chars[name_pos]=26
-  end
- end
- if btnp(1) then
-  name_pos=min(3,name_pos+1)
+ if btnp(1) or ((btnp(4) or btnp(5)) and name_pos<=3) then
+  name_pos=min(4,name_pos+1)
+  sfx(7)
  end
  if btnp(0) then
   name_pos=max(1,name_pos-1)
+  sfx(7)
  end
- if btnp(4) or btnp(5) then
+ if (btnp(4) or btnp(5)) and name_pos==4 then
   local n=chr(64+name_chars[1])..chr(64+name_chars[2])..chr(64+name_chars[3])
   insert_score(n,total_score,lvl)
+  sfx(7)
   state=st_scores
+  scores_timer=0
  end
 end
 
@@ -1371,10 +1452,16 @@ function draw_namein()
   local c=13
   if i==name_pos then c=11 end
   local ch=chr(64+name_chars[i])
-  print(ch,48+(i-1)*12,86,c)
+  print(ch,44+(i-1)*12,86,c)
   if i==name_pos and flr(frame/8)%2==0 then
-   line(48+(i-1)*12,93,48+(i-1)*12+4,93,c)
+   line(44+(i-1)*12,93,44+(i-1)*12+4,93,c)
   end
+ end
+ -- ok button
+ local okc=name_pos==4 and 11 or 13
+ print("ok",80,86,okc)
+ if name_pos==4 and flr(frame/8)%2==0 then
+  line(80,93,88,93,okc)
  end
 end
 
@@ -1382,10 +1469,13 @@ end
 -- highscore state
 -------------------------------
 function update_scores()
- if any_btnp() then
+ scores_timer+=1
+ if scores_timer>30 and any_btnp() then
   sfx(7)
   state=st_intro
   intro_timer=0
+ intro_cycle=0
+ intro_show_scores=false
  end
 end
 
@@ -1396,23 +1486,29 @@ function draw_scores()
  coprint("hall of fame",24,13,0)
  line(20,32,108,32,13)
 
- print("NAME  SCORE  LEVEL",24,38,6)
+ local dlet={"i","e","m","c"}
+ print("name",24,38,6)
+ print("score",48,38,6)
+ print("lv",80,38,6)
+ print("df",100,38,6)
  line(20,45,108,45,5)
 
  for i=1,min(#hi_names,5) do
   local y=48+(i-1)*12
   local c=7
   if i==1 then c=10 end
-  print(hi_names[i],28,y,c)
-  print(tostr(hi_scores[i]),56,y,c)
-  print(tostr(hi_levels[i]).."/"..max_lvl,92,y,c)
+  print(hi_names[i],24,y,c)
+  print(tostr(hi_scores[i]),48,y,c)
+  print(tostr(hi_levels[i]).."/"..max_lvl,76,y,c)
+  local di=flr(hi_diffs[i])%4+1
+  print(dlet[di],104,y,c)
  end
 
  if #hi_names==0 then
   print("NO RECORDS YET",30,60,5)
  end
 
- if flr(frame/15)%2==0 then
+ if flr(frame/30)%2==0 then
   coprint("engage controls",110,11,0)
  end
 end

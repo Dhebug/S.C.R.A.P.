@@ -66,12 +66,24 @@ Each level is a training test with:
 - **Objective:** Use tow cable to drag debris to collection zone, clear remaining obstacles with laser, reach landing zone
 - **Fail condition:** Run out of fuel, crash, lose the cargo, or run out of ammo
 
+### Difficulty
+
+Selectable from the title screen settings menu.
+
+| Difficulty | Fuel Usage | Score Mult | Description |
+|------------|-----------|-----------|-------------|
+| Intern | 70% | x1 | Generous fuel budget. Good for learning the ropes. |
+| Employee | 150% | x2 | Standard fuel consumption. The daily grind. |
+| Manager | 250% | x4 | Fuel burns fast. Every thrust counts. |
+| CEO | 400% | x8 | Fuel evaporates. Good luck with your golden parachute. |
+
+Difficulty is shown in the Hall of Fame as **I**, **E**, **M**, or **C**.
+
 ### Scoring
 
 Each level awards a score based on:
 - Fuel remaining
-- Time taken
-- Bonus objectives (TBD)
+- Level multiplier
 
 Total score is accumulated across all levels.
 
