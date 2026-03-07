@@ -32,6 +32,8 @@ warn_text=""
 -- camera
 cam_x=0
 cam_y=0
+cam_ox=0
+cam_oy=0
 
 -- physics
 friction=0.995
@@ -209,12 +211,16 @@ function update_ship()
 
  ship.fuel=max(0,ship.fuel)
 
- -- update camera (elastic follow + velocity lookahead)
- local look=20
- local tx=ship.x+ship.dx*look-64
- local ty=ship.y+ship.dy*look-64
- cam_x+=(tx-cam_x)*0.05
- cam_y+=(ty-cam_y)*0.05
+ -- update camera: snap to ship + look ahead
+ -- combine facing direction and velocity
+ local look_ang=20
+ local look_vel=15
+ local tx=cos(ship.ang)*look_ang+ship.dx*look_vel
+ local ty=sin(ship.ang)*look_ang+ship.dy*look_vel
+ cam_ox+=(tx-cam_ox)*0.03
+ cam_oy+=(ty-cam_oy)*0.03
+ cam_x=ship.x-64+cam_ox
+ cam_y=ship.y-64+cam_oy
 end
 
 function draw_ship()
@@ -878,6 +884,8 @@ function start_level()
  land_timer=0
  fail_timer=0
  warn_scroll=-1
+ cam_ox=0
+ cam_oy=0
  cam_x=ship.x-64
  cam_y=ship.y-64
  state=st_play
@@ -1181,7 +1189,7 @@ end
 
 function draw_play()
  -- set camera for world drawing
- camera(cam_x,cam_y)
+ camera(flr(cam_x),flr(cam_y))
 
  draw_land()
  draw_obstacles()
@@ -1254,7 +1262,7 @@ function update_success()
 end
 
 function draw_success()
- camera(cam_x,cam_y)
+ camera(flr(cam_x),flr(cam_y))
  draw_land()
  draw_ship()
  draw_particles()
@@ -1288,7 +1296,7 @@ function update_fail()
 end
 
 function draw_fail()
- camera(cam_x,cam_y)
+ camera(flr(cam_x),flr(cam_y))
  draw_obstacles()
  draw_particles()
  camera()
