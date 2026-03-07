@@ -568,6 +568,29 @@ levels={
 }
 
 -------------------------------
+-- chrome panel
+-------------------------------
+function draw_panel(x0,y0,x1,y1)
+ -- top-left outer: white
+ line(x0,y0,x1,y0,7)
+ line(x0,y0,x0,y1,7)
+ -- bottom-right outer: light blue
+ line(x0+1,y1,x1,y1,12)
+ line(x1,y0+1,x1,y1,12)
+ -- top-left middle: light blue
+ line(x0+1,y0+1,x1-1,y0+1,12)
+ line(x0+1,y0+1,x0+1,y1-1,12)
+ -- bottom-right middle: white
+ line(x0+1,y1-1,x1-1,y1-1,7)
+ line(x1-1,y0+1,x1-1,y1-1,7)
+ -- inner: black on top-left
+ line(x0+2,y0+2,x1-2,y0+2,0)
+ line(x0+2,y0+2,x0+2,y1-2,0)
+ -- fill interior
+ rectfill(x0+3,y0+3,x1-2,y1-2,1)
+end
+
+-------------------------------
 -- hud
 -------------------------------
 function draw_hud()
@@ -881,8 +904,7 @@ end
 function draw_brief()
  local lv=levels[lvl]
 
- rect(8,8,120,120,13)
- rectfill(9,9,119,119,1)
+ draw_panel(8,8,120,120)
 
  print("test "..lvl..": "..lv.title,14,14,11)
  print("",14,26)
@@ -1013,8 +1035,7 @@ function draw_success()
  draw_ship()
  draw_particles()
 
- rectfill(20,40,108,80,1)
- rect(20,40,108,80,11)
+ draw_panel(20,40,108,80)
 
  print("test passed!",36,46,11)
  print("score: +"..score,38,56,7)
@@ -1045,8 +1066,7 @@ function draw_fail()
  draw_obstacles()
  draw_particles()
 
- rectfill(20,35,108,90,1)
- rect(20,35,108,90,8)
+ draw_panel(20,35,108,90)
 
  print("test failed!",36,41,8)
 
@@ -1090,8 +1110,7 @@ function update_namein()
 end
 
 function draw_namein()
- rectfill(15,30,113,95,1)
- rect(15,30,113,95,13)
+ draw_panel(15,30,113,95)
 
  print("certification",34,36,lvl>=max_lvl and 11 or 8)
  if lvl>=max_lvl then
@@ -1126,8 +1145,7 @@ function update_scores()
 end
 
 function draw_scores()
- rect(10,10,118,118,13)
- rectfill(11,11,117,117,1)
+ draw_panel(10,10,118,118)
 
  print("s.c.r.a.p.",38,16,11)
  print("hall of fame",36,24,13)
