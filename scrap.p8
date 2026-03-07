@@ -10,40 +10,23 @@ __lua__
 -------------------------------
 
 -- game states
-st_intro=0
-st_brief=1
-st_play=2
-st_success=3
-st_fail=4
-st_scores=5
-st_namein=6
+st_intro,st_brief,st_play,st_success,st_fail,st_scores,st_namein=0,1,2,3,4,5,6
 
-state=st_intro
-lvl=1
-max_lvl=6
-score=0
-total_score=0
-frame=0
+state,lvl,max_lvl,score,total_score,frame=st_intro,1,10,0,0,0
 
 -- ui feedback
-warn_scroll=-1
-warn_text=""
+warn_scroll,warn_text=-1,""
 
 -- camera
-cam_x=0
-cam_y=0
-cam_ox=0
-cam_oy=0
+cam_x,cam_y,cam_ox,cam_oy=0,0,0,0
 
 -- physics
-friction=0.995
-max_spd=2
+friction,max_spd=0.995,2
 
 -- controls
 reverse_rot=true -- true=left steers left (ship rotates cw), false=direct
-difficulty=1 -- 0-3
+difficulty,menu_sel=1,0 -- difficulty 0-3, menu_sel 0=rotation 1=difficulty
 diff_names={"intern","employee","manager","ceo"}
-menu_sel=0 -- 0=rotation, 1=difficulty
 
 -------------------------------
 -- ship
@@ -65,6 +48,8 @@ function init_ship(x,y,ang,fuel)
   cable_out=false,
   cable_tgt=nil,
   alive=true,
+  hp=3,
+  dmg_timer=0,
   snd_main=false,
   snd_lat=false
  }
@@ -72,26 +57,21 @@ end
 
 function update_ship()
  if not ship.alive then return end
+ if ship.dmg_timer>0 then ship.dmg_timer-=1 end
 
  local lv=levels[lvl]
  -- difficulty: 0=intern,1=employee,2=manager,3=ceo
- local fuel_mults={0.7,1.5,2.5,4}
- local fuel_mult=fuel_mults[difficulty+1]
- local pwr=0.06
- local rpwr=0.02
- local bpwr=0.03
+ local fm=split"0.7,1.5,2.5,4"[difficulty+1]
+ local pwr,rpwr,bpwr=0.06,0.02,0.03
 
  -- reset thrust visuals
- ship.thrust_f=0
- ship.thrust_b=0
- ship.thrust_l=0
- ship.thrust_r=0
+ ship.thrust_f,ship.thrust_b,ship.thrust_l,ship.thrust_r=0,0,0,0
 
  -- forward thrust (up)
  if btn(2) and lv.has_fwd and ship.fuel>0 then
   ship.dx+=cos(ship.ang)*pwr
   ship.dy+=sin(ship.ang)*pwr
-  ship.fuel-=0.15*fuel_mult
+  ship.fuel-=0.15*fm
   ship.thrust_f=1
  end
 
@@ -99,7 +79,7 @@ function update_ship()
  if btn(3) and lv.has_fwd and ship.fuel>0 then
   ship.dx-=cos(ship.ang)*bpwr
   ship.dy-=sin(ship.ang)*bpwr
-  ship.fuel-=0.1*fuel_mult
+  ship.fuel-=0.1*fm
   ship.thrust_b=1
  end
 
@@ -107,12 +87,12 @@ function update_ship()
  local rdir=reverse_rot and 1 or -1
  if btn(0) and lv.has_rot and ship.fuel>0 then
   ship.ang+=rpwr*rdir
-  ship.fuel-=0.05*fuel_mult
+  ship.fuel-=0.05*fm
   if reverse_rot then ship.thrust_r=1 else ship.thrust_l=1 end
  end
  if btn(1) and lv.has_rot and ship.fuel>0 then
   ship.ang-=rpwr*rdir
-  ship.fuel-=0.05*fuel_mult
+  ship.fuel-=0.05*fm
   if reverse_rot then ship.thrust_l=1 else ship.thrust_r=1 end
  end
 
@@ -246,9 +226,16 @@ function draw_ship()
  local rx=x+cos(a-0.35)*4
  local ry=y+sin(a-0.35)*4
 
- line(nx,ny,lx,ly,7)
- line(nx,ny,rx,ry,7)
- line(lx,ly,rx,ry,12)
+ -- damage flash
+ local sc1=7
+ local sc2=12
+ if ship.dmg_timer>0 and flr(ship.dmg_timer/2)%2==1 then
+  sc1=8
+  sc2=8
+ end
+ line(nx,ny,lx,ly,sc1)
+ line(nx,ny,rx,ry,sc1)
+ line(lx,ly,rx,ry,sc2)
 
  -- thrust flames
  if ship.thrust_f>0 then
@@ -276,6 +263,26 @@ function draw_ship()
  if ship.cable_out and ship.cable_tgt then
   local tgt=ship.cable_tgt
   line(x,y,tgt.x,tgt.y,6)
+ end
+end
+
+function ship_hit()
+ if ship.dmg_timer>0 then return end
+ ship.hp-=1
+ ship.dmg_timer=30
+ if ship.hp<=0 then
+  ship_die()
+ else
+  -- damage sparks
+  for i=1,4 do
+   add(particles,{
+    x=ship.x,y=ship.y,
+    dx=rnd(1)-0.5,dy=rnd(1)-0.5,
+    life=10+rnd(5),
+    c=8
+   })
+  end
+  sfx(0)
  end
 end
 
@@ -348,6 +355,19 @@ function update_bullets()
      break
     end
    end
+   -- check mine collision
+   for m in all(mines) do
+    if not m.det then
+     local mdx=b.x-m.x
+     local mdy=b.y-m.y
+     if abs(mdx)<=4 and abs(mdy)<=4 then
+      m.det=3
+      del(bullets,b)
+      if #bullets==0 then sfx(-1,1) end
+      break
+     end
+    end
+   end
   end
  end
 end
@@ -370,7 +390,7 @@ function toggle_cable()
   return
  end
  -- find nearest debris
- local best,bd=nil,30
+ local best,bd=nil,40
  for d in all(debris) do
   local ddx=ship.x-d.x
   local ddy=ship.y-d.y
@@ -407,7 +427,7 @@ function update_obstacles()
    local ddy=ship.y-ob.y
    local hr=ob.r+3
    if abs(ddx)<=hr and abs(ddy)<=hr and ddx*ddx+ddy*ddy<hr*hr then
-    ship_die()
+    ship_hit()
    end
   end
  end
@@ -486,6 +506,196 @@ function draw_fuel_pods()
 end
 
 -------------------------------
+-- ammo pods
+-------------------------------
+function update_ammo_pods()
+ for a in all(ammo_pods) do
+  local ddx=ship.x-a.x
+  local ddy=ship.y-a.y
+  if abs(ddx)<=8 and abs(ddy)<=8 and ddx*ddx+ddy*ddy<64 then
+   ship.ammo+=a.amt
+   del(ammo_pods,a)
+   sfx(4)
+  end
+ end
+end
+
+function draw_ammo_pods()
+ for a in all(ammo_pods) do
+  local pulse=sin(frame/20)*1
+  circfill(a.x,a.y,3+pulse,8)
+  circfill(a.x,a.y,2+pulse,2)
+  print("a",a.x-2,a.y-2,7)
+ end
+end
+
+-------------------------------
+-- explosion rings
+-------------------------------
+rings={}
+
+function update_rings()
+ for r in all(rings) do
+  r.r+=1.5
+  r.life-=1
+  if r.life<=0 then del(rings,r) end
+ end
+end
+
+function draw_rings()
+ for r in all(rings) do
+  local c=r.life>5 and 9 or 5
+  circ(r.x,r.y,r.r,c)
+ end
+end
+
+-------------------------------
+-- gravity wells
+-------------------------------
+grav_wells={}
+
+function update_grav_wells()
+ for g in all(grav_wells) do
+  local ddx=g.x-ship.x
+  local ddy=g.y-ship.y
+  if abs(ddx)>g.pull_r or abs(ddy)>g.pull_r then
+   -- too far, no effect
+  else
+   local dist=sqrt(ddx*ddx+ddy*ddy)
+   if dist<g.kill_r and ship.alive then
+    ship_die()
+   elseif dist<g.pull_r and dist>1 then
+    local f=g.str/dist
+    ship.dx+=ddx/dist*f
+    ship.dy+=ddy/dist*f
+   end
+  end
+ end
+end
+
+function draw_grav_wells()
+ for g in all(grav_wells) do
+  -- planet/black hole
+  circfill(g.x,g.y,g.kill_r,g.c or 0)
+  circ(g.x,g.y,g.kill_r,g.oc or 1)
+  -- gravity field rings
+  for i=1,3 do
+   local r=g.kill_r+i*(g.pull_r-g.kill_r)/4
+   local pulse=sin(frame/40+i*0.3)*0.5
+   circ(g.x,g.y,r+pulse,1)
+  end
+ end
+end
+
+-------------------------------
+-- mines
+-------------------------------
+mines={}
+
+function update_mines()
+ for m in all(mines) do
+  if m.det then
+   m.det-=1
+   if m.det<=0 then
+    explode_mine(m)
+   end
+  else
+   -- ship proximity trigger
+   if ship.alive then
+    local ddx=ship.x-m.x
+    local ddy=ship.y-m.y
+    if abs(ddx)<=5 and abs(ddy)<=5 then
+     m.det=2
+    end
+   end
+  end
+ end
+end
+
+function explode_mine(m)
+ -- explosion particles
+ for i=1,6 do
+  add(particles,{
+   x=m.x,y=m.y,
+   dx=rnd(2)-1,dy=rnd(2)-1,
+   life=10+rnd(8),
+   c=rnd()>0.5 and 9 or 10
+  })
+ end
+ -- damage ship if close
+ local ddx=ship.x-m.x
+ local ddy=ship.y-m.y
+ if abs(ddx)<=m.blast and abs(ddy)<=m.blast then
+  local dist=sqrt(ddx*ddx+ddy*ddy)
+  if dist<m.blast then
+   ship_hit()
+   -- push ship away
+   if dist>1 then
+    ship.dx+=ddx/dist*0.8
+    ship.dy+=ddy/dist*0.8
+   end
+  end
+ end
+ -- chain: trigger nearby mines
+ local cr=m.blast*1.5
+ for m2 in all(mines) do
+  if m2!=m and not m2.det then
+   local dx2=m2.x-m.x
+   local dy2=m2.y-m.y
+   if abs(dx2)<=cr and abs(dy2)<=cr then
+    local d2=sqrt(dx2*dx2+dy2*dy2)
+    if d2<cr then
+     m2.det=flr(d2/3)+1
+    end
+   end
+  end
+ end
+ add(rings,{x=m.x,y=m.y,r=2,life=flr(m.blast/1.5)})
+ del(mines,m)
+ sfx(4)
+end
+
+function draw_mines()
+ for m in all(mines) do
+  if m.det then
+   -- flashing when about to explode
+   local c=flr(frame/2)%2==0 and 8 or 9
+   circfill(m.x,m.y,3,c)
+  else
+   circfill(m.x,m.y,2,0)
+   circ(m.x,m.y,2,5)
+   pset(m.x,m.y,8)
+  end
+ end
+end
+
+-------------------------------
+-- shield pickups
+-------------------------------
+shield_pods={}
+
+function update_shield_pods()
+ for s in all(shield_pods) do
+  local ddx=ship.x-s.x
+  local ddy=ship.y-s.y
+  if abs(ddx)<=8 and abs(ddy)<=8 and ddx*ddx+ddy*ddy<64 then
+   ship.hp=min(3,ship.hp+1)
+   del(shield_pods,s)
+   sfx(4)
+  end
+ end
+end
+
+function draw_shield_pods()
+ for s in all(shield_pods) do
+  local pulse=sin(frame/20)*1
+  circfill(s.x,s.y,3+pulse,12)
+  circfill(s.x,s.y,2+pulse,1)
+  print("\x97",s.x-2,s.y-2,7)
+ end
+end
+
+-------------------------------
 -- particles
 -------------------------------
 particles={}
@@ -515,15 +725,11 @@ end
 land={}
 
 function diff_radius(r)
- -- shrink zones on harder difficulties
- local shrink={1,0.85,0.7,0.55}
- return r*shrink[difficulty+1]
+ return r*split"1,0.85,0.7,0.55"[difficulty+1]
 end
 
 function diff_hp(hp)
- -- more hits on harder difficulties
- local mult={1,1,2,3}
- return hp*mult[difficulty+1]
+ return hp*split"1,1,2,3"[difficulty+1]
 end
 
 function init_land(x,y,r)
@@ -631,6 +837,19 @@ end
 -------------------------------
 -- levels
 -------------------------------
+function reset_world()
+ obstacles={}
+ debris={}
+ bullets={}
+ drop_zone=nil
+ fuel_pods={}
+ ammo_pods={}
+ mines={}
+ grav_wells={}
+ shield_pods={}
+ rings={}
+end
+
 levels={
  -- level 1: straight ahead
  {
@@ -643,11 +862,7 @@ levels={
   setup=function()
    init_ship(20,64,0,30)
    init_land(250,64)
-   obstacles={}
-   debris={}
-   bullets={}
-   drop_zone=nil
-   fuel_pods={}
+   reset_world()
    ship.ammo=0
   end
  },
@@ -662,11 +877,7 @@ levels={
   setup=function()
    init_ship(64,200,0,40)
    init_land(200,40)
-   obstacles={}
-   debris={}
-   bullets={}
-   drop_zone=nil
-   fuel_pods={}
+   reset_world()
    ship.ammo=0
   end
  },
@@ -681,15 +892,11 @@ levels={
   setup=function()
    init_ship(20,100,0,50)
    init_land(280,100)
+   reset_world()
    obstacles={
     {x=150,y=100,r=10,hp=diff_hp(3),dx=0,dy=0}
    }
-   debris={}
-   bullets={}
-   drop_zone=nil
-   fuel_pods={}
    ship.ammo=10
-   ship.item=1
   end
  },
  -- level 4: tow the line
@@ -703,6 +910,7 @@ levels={
   setup=function()
    init_ship(20,200,0,55)
    init_land(280,40)
+   reset_world()
    obstacles={
     {x=180,y=120,r=8,hp=diff_hp(2),dx=0,dy=0}
    }
@@ -710,10 +918,6 @@ levels={
     {x=100,y=80,dx=0,dy=0,collected=false}
    }
    drop_zone={x=250,y=200,r=diff_radius(14)}
-   bullets={}
-   fuel_pods={}
-   ship.ammo=10
-   ship.item=1
   end
  },
  -- level 5: bulk collection
@@ -727,6 +931,7 @@ levels={
   setup=function()
    init_ship(20,150,0,65)
    init_land(350,150)
+   reset_world()
    obstacles={
     {x=120,y=80,r=8,hp=diff_hp(2),dx=0,dy=0},
     {x=250,y=200,r=10,hp=diff_hp(3),dx=0,dy=0}
@@ -737,10 +942,7 @@ levels={
     {x=300,y=80,dx=0,dy=0,collected=false}
    }
    drop_zone={x=200,y=150,r=diff_radius(16)}
-   bullets={}
-   fuel_pods={}
    ship.ammo=15
-   ship.item=1
   end
  },
  -- level 6: long haul
@@ -754,20 +956,152 @@ levels={
   setup=function()
    init_ship(20,300,0,30)
    init_land(500,50)
+   reset_world()
    obstacles={
     {x=150,y=200,r=12,hp=diff_hp(2),dx=0,dy=0},
     {x=350,y=150,r=10,hp=diff_hp(3),dx=0,dy=0}
    }
-   debris={}
-   bullets={}
-   drop_zone=nil
    fuel_pods={
     {x=100,y=250,amt=20},
     {x=250,y=180,amt=20},
     {x=400,y=100,amt=15}
    }
-   ship.ammo=10
-   ship.item=1
+  end
+ },
+ -- level 7: minefield
+ {
+  title="minefield",
+  brief="tHE DIRECT ROUTE IS\nMINED. sOMEONE LEFT\nEXPLOSIVES EVERYWHERE.\n\nwATCH YOUR STEP.\nOR YOUR THRUST.\n\nwE ADDED SHIELDS.\nyOU'RE WELCOME.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=false,
+  setup=function()
+   init_ship(20,150,0,50)
+   init_land(350,150)
+   reset_world()
+   mines={
+    {x=90,y=140,blast=20},
+    {x=105,y=155,blast=20},
+    {x=115,y=135,blast=20},
+    {x=200,y=150,blast=20},
+    {x=215,y=165,blast=20},
+    {x=225,y=140,blast=20},
+    {x=290,y=145,blast=20}
+   }
+   ammo_pods={
+    {x=160,y=100,amt=5}
+   }
+   shield_pods={
+    {x=150,y=190},
+    {x=260,y=110}
+   }
+   ship.ammo=5
+  end
+ },
+ -- level 8: gravity assist
+ {
+  title="gravity assist",
+  brief="a ROGUE PLANET BLOCKS\nYOUR PATH. iTS GRAVITY\nIS STRONG.\n\nuSE IT TO YOUR\nADVANTAGE. oR DON'T.\n\ns.c.a.m. HAS INSURANCE.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=true,
+  setup=function()
+   init_ship(20,200,0,45)
+   init_land(400,80)
+   reset_world()
+   obstacles={
+    {x=280,y=100,r=6,hp=diff_hp(2),dx=0,dy=0.15},
+    {x=180,y=200,r=6,hp=diff_hp(2),dx=0,dy=-0.15}
+   }
+   debris={
+    {x=120,y=260,dx=0,dy=0,collected=false}
+   }
+   drop_zone={x=350,y=180,r=diff_radius(14)}
+   fuel_pods={
+    {x=300,y=250,amt=15}
+   }
+   grav_wells={
+    {x=220,y=150,kill_r=8,pull_r=80,str=0.08,c=2,oc=4}
+   }
+   shield_pods={
+    {x=100,y=140}
+   }
+  end
+ },
+ -- level 9: moving day
+ {
+  title="moving day",
+  brief="fLOATING ASTEROIDS\nEVERYWHERE. tHEY DON'T\nCARE ABOUT YOU.\n\nDODGE, SHOOT, OR BOTH.\n\npERFORMANCE REVIEW IS\nNEXT WEEK.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=false,
+  setup=function()
+   init_ship(20,150,0,50)
+   init_land(450,150)
+   reset_world()
+   obstacles={
+    {x=100,y=80,r=10,hp=diff_hp(3),dx=0.2,dy=0.1},
+    {x=180,y=220,r=8,hp=diff_hp(2),dx=-0.15,dy=-0.2},
+    {x=260,y=100,r=12,hp=diff_hp(4),dx=0.1,dy=0.25},
+    {x=340,y=200,r=8,hp=diff_hp(2),dx=-0.2,dy=0.15}
+   }
+   fuel_pods={
+    {x=200,y=150,amt=15},
+    {x=350,y=100,amt=15}
+   }
+   ammo_pods={
+    {x=150,y=150,amt=5}
+   }
+   shield_pods={
+    {x=300,y=180}
+   }
+   ship.ammo=12
+  end
+ },
+ -- level 10: final exam
+ {
+  title="final exam",
+  brief="tHIS IS IT. eVERYTHING\nYOU'VE LEARNED.\n\nmINES. gRAVITY. aSTEROIDS.\ncARGO. aND A VERY LONG\nWAY TO GO.\n\ngOOD LUCK, RECRUIT.",
+  has_fwd=true,
+  has_rot=true,
+  has_items=true,
+  has_cable=true,
+  setup=function()
+   init_ship(20,300,0,40)
+   init_land(550,60)
+   reset_world()
+   obstacles={
+    {x=150,y=250,r=10,hp=diff_hp(3),dx=0.1,dy=-0.1},
+    {x=350,y=180,r=8,hp=diff_hp(2),dx=-0.15,dy=0.1}
+   }
+   debris={
+    {x=100,y=200,dx=0,dy=0,collected=false},
+    {x=300,y=250,dx=0,dy=0,collected=false}
+   }
+   drop_zone={x=400,y=250,r=diff_radius(14)}
+   fuel_pods={
+    {x=120,y=150,amt=15},
+    {x=280,y=100,amt=15},
+    {x=450,y=200,amt=15}
+   }
+   mines={
+    {x=200,y=210,blast=20},
+    {x=380,y=130,blast=20},
+    {x=480,y=90,blast=20}
+   }
+   grav_wells={
+    {x=250,y=150,kill_r=8,pull_r=70,str=0.06,c=2,oc=4}
+   }
+   ammo_pods={
+    {x=350,y=100,amt=5}
+   }
+   shield_pods={
+    {x=200,y=120},
+    {x=420,y=170}
+   }
   end
  }
 }
@@ -786,15 +1120,29 @@ function cprint(t,y,c)
  print(t,64-#t*2,y,c)
 end
 
+function draw_hiscores(y0,sp)
+ local dlet={"i","e","m","c"}
+ print("name",24,y0,6)
+ print("score",48,y0,6)
+ print("lv",80,y0,6)
+ print("df",100,y0,6)
+ line(20,y0+7,108,y0+7,5)
+ for i=1,min(#hi_names,5) do
+  local y=y0+10+(i-1)*sp
+  local c=i==1 and 10 or 7
+  print(hi_names[i],24,y,c)
+  print(tostr(hi_scores[i]),48,y,c)
+  print(tostr(hi_levels[i]).."/"..max_lvl,76,y,c)
+  print(dlet[flr(hi_diffs[i])%4+1],100,y,c)
+ end
+end
+
 function coprint(t,y,c,oc)
  local x=64-#t*2
- for dx=-1,1 do
-  for dy=-1,1 do
-   if dx!=0 or dy!=0 then
-    print(t,x+dx,y+dy,oc)
-   end
-  end
- end
+ print(t,x-1,y,oc)
+ print(t,x+1,y,oc)
+ print(t,x,y-1,oc)
+ print(t,x,y+1,oc)
  print(t,x,y,c)
 end
 
@@ -802,22 +1150,16 @@ end
 -- chrome panel
 -------------------------------
 function draw_panel(x0,y0,x1,y1)
- -- top-left outer: white
  line(x0,y0,x1,y0,7)
  line(x0,y0,x0,y1,7)
- -- bottom-right outer: light blue
  line(x0+1,y1,x1,y1,12)
  line(x1,y0+1,x1,y1,12)
- -- top-left middle: light blue
  line(x0+1,y0+1,x1-1,y0+1,12)
  line(x0+1,y0+1,x0+1,y1-1,12)
- -- bottom-right middle: white
  line(x0+1,y1-1,x1-1,y1-1,7)
  line(x1-1,y0+1,x1-1,y1-1,7)
- -- inner: black on top-left
  line(x0+2,y0+2,x1-2,y0+2,0)
  line(x0+2,y0+2,x0+2,y1-2,0)
- -- fill interior
  rectfill(x0+3,y0+3,x1-2,y1-2,1)
 end
 
@@ -825,7 +1167,7 @@ end
 -- hud
 -------------------------------
 function draw_hud()
- -- fuel bar
+ -- fuel bar (left)
  local fw=flr(ship.fuel*0.4)
  local fc=11
  if ship.fuel<30 then fc=8 end
@@ -835,13 +1177,22 @@ function draw_hud()
  rect(2,2,2+40,5,6)
  print("fuel",2,8,6)
 
- -- speed indicator
+ -- hull bar (right)
+ local hw=flr(ship.hp/3*40)
+ local hc=8
+ if ship.hp<=1 then hc=flr(frame/4)%2==0 and 8 or 0 end
+ rectfill(85,2,125,5,0)
+ rectfill(125-hw,2,125,5,hc)
+ rect(85,2,125,5,6)
+ print("hull",112,8,6)
+
+ -- speed (center)
  local spd=sqrt(ship.dx*ship.dx+ship.dy*ship.dy)
  local sc=11
  if spd>1.5 then sc=8 end
- print("spd:"..flr(spd*100)/100,80,2,sc)
+ print("spd:"..flr(spd*100)/100,48,2,sc)
 
- -- item display
+ -- item display (center)
  local lv=levels[lvl]
  if lv.has_items then
   local iname="laser"
@@ -852,14 +1203,11 @@ function draw_hud()
     ic=6
    end
   end
-  print("["..iname.."]",80,8,ic)
+  print("["..iname.."]",48,8,ic)
   if ship.item==1 then
-   print("ammo:"..ship.ammo,80,14,7)
+   print("ammo:"..ship.ammo,48,14,7)
   end
  end
-
- -- level indicator
- print("test "..lvl.."/"..max_lvl,46,2,13)
 end
 
 -------------------------------
@@ -1007,10 +1355,8 @@ function start_level()
 end
 
 function calc_score()
- -- score based on fuel remaining, level, and difficulty
- local diff_mult={1,2,4,8}
  local base=ship.fuel*10+lvl*50
- return flr(base*diff_mult[difficulty+1])
+ return flr(base*split"1,2,4,8"[difficulty+1])
 end
 
 -------------------------------
@@ -1030,7 +1376,7 @@ function _init()
  intro_cycle=0
  intro_page=0
  --cheat: uncomment to skip to a level
- --state=st_brief lvl=6
+ --state=st_brief lvl=7
 end
 
 prev_state=-1
@@ -1157,38 +1503,23 @@ function draw_intro()
 
  -- ascii art (all at x=14 for alignment)
  print(" ___  ___ ___    _   ___",14,10,c)
- print("/ __|/ __| _ \\  /_\\ | _ \\",c)
- print("\\__ \\ (_||   / / _ \\|  _/",c)
- print("|___/\\___|_|_\\/_/ \\_\\_|",c)
+ print("/ __|/ __| _ \\  /_\\ | _ \\")
+ print("\\__ \\ (_||   / / _ \\|  _/")
+ print("|___/\\___|_|_\\/_/ \\_\\_|")
 
  if intro_page==1 then
   -- show highscores
-  local dlet={"i","e","m","c"}
-  print("name",24,48,6)
-  print("score",48,48,6)
-  print("lv",80,48,6)
-  print("df",100,48,6)
-  line(20,55,108,55,5)
-  for i=1,min(#hi_names,5) do
-   local y=58+(i-1)*10
-   local c=7
-   if i==1 then c=10 end
-   print(hi_names[i],24,y,c)
-   print(tostr(hi_scores[i]),48,y,c)
-   print(tostr(hi_levels[i]).."/"..max_lvl,76,y,c)
-   local di=flr(hi_diffs[i])%4+1
-   print(dlet[di],100,y,c)
-  end
+  draw_hiscores(48,10)
  elseif intro_page==2 then
   -- credits
   cprint("credits",36,13)
   line(20,44,108,44,5)
   cprint("brainstorming",48,6)
   print("  hENRIK eNGEL",36,56,7)
-  print("  iDA pETTERSEN",36,62,7)
-  print("  mICKAEL pOINTIER",36,68,7)
-  print("  sOREN jENSEN",36,74,7)
-  print("  tHOMAS mUNDAL",36,80,7)
+  print("  iDA pETTERSEN")
+  print("  mICKAEL pOINTIER")
+  print("  sOREN jENSEN")
+  print("  tHOMAS mUNDAL")
   line(20,87,108,87,5)
   print("cODE, gFX, sFX",36,91,6)
   print("  cLAUDE oPUS",36,97,7)
@@ -1303,6 +1634,11 @@ function update_play()
  update_obstacles()
  update_debris()
  update_fuel_pods()
+ update_ammo_pods()
+ update_shield_pods()
+ update_grav_wells()
+ update_mines()
+ update_rings()
  update_particles()
 
  -- check success
@@ -1386,10 +1722,15 @@ function draw_play()
  -- set camera for world drawing
  camera(flr(cam_x),flr(cam_y))
 
+ draw_grav_wells()
+ draw_mines()
+ draw_rings()
  draw_land()
  draw_obstacles()
  draw_debris()
  draw_fuel_pods()
+ draw_ammo_pods()
+ draw_shield_pods()
  draw_ship()
  draw_bullets()
  draw_particles()
@@ -1410,6 +1751,15 @@ function draw_play()
  end
  for f in all(fuel_pods) do
   draw_indicator(f.x,f.y,11,3)
+ end
+ for a in all(ammo_pods) do
+  draw_indicator(a.x,a.y,8,2)
+ end
+ for s in all(shield_pods) do
+  draw_indicator(s.x,s.y,12,1)
+ end
+ for m in all(mines) do
+  draw_indicator(m.x,m.y,8,0)
  end
 
  draw_hud()
@@ -1610,23 +1960,7 @@ function draw_scores()
  coprint("hall of fame",24,13,0)
  line(20,32,108,32,13)
 
- local dlet={"i","e","m","c"}
- print("name",24,38,6)
- print("score",48,38,6)
- print("lv",80,38,6)
- print("df",100,38,6)
- line(20,45,108,45,5)
-
- for i=1,min(#hi_names,5) do
-  local y=48+(i-1)*12
-  local c=7
-  if i==1 then c=10 end
-  print(hi_names[i],24,y,c)
-  print(tostr(hi_scores[i]),48,y,c)
-  print(tostr(hi_levels[i]).."/"..max_lvl,76,y,c)
-  local di=flr(hi_diffs[i])%4+1
-  print(dlet[di],104,y,c)
- end
+ draw_hiscores(38,12)
 
  if #hi_names==0 then
   print("NO RECORDS YET",30,60,5)

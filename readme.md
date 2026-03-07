@@ -78,6 +78,34 @@ Each level is a training test with:
 - **Objective:** Navigate to a distant landing zone, collecting fuel pods along the way to survive the journey
 - **Fail condition:** Run out of fuel or crash
 
+#### Level 7 - "Minefield"
+
+- **Briefing:** "The direct route is mined. Someone left explosives everywhere. Watch your step. We added shields. You're welcome."
+- **Controls:** All thrusters + Laser
+- **Objective:** Navigate through a minefield to reach the landing zone. Mines chain-react when triggered. Shield pickups restore HP.
+- **Fail condition:** Run out of fuel, HP, or crash
+
+#### Level 8 - "Gravity Assist"
+
+- **Briefing:** "A rogue planet blocks your path. Its gravity is strong. Use it to your advantage. Or don't. S.C.A.M. has insurance."
+- **Controls:** All thrusters + Laser + Tow cable
+- **Objective:** Navigate around a gravity well, collect cargo to the drop zone, and land. Moving obstacles orbit the planet.
+- **Fail condition:** Run out of fuel, crash into the planet, or lose cargo
+
+#### Level 9 - "Moving Day"
+
+- **Briefing:** "Floating asteroids everywhere. They don't care about you. Dodge, shoot, or both. Performance review is next week."
+- **Controls:** All thrusters + Laser
+- **Objective:** Navigate through a field of moving asteroids to reach a distant landing zone. Fuel pods along the way.
+- **Fail condition:** Run out of fuel or HP
+
+#### Level 10 - "Final Exam"
+
+- **Briefing:** "This is it. Everything you've learned. Mines. Gravity. Asteroids. Cargo. And a very long way to go. Good luck, recruit."
+- **Controls:** All thrusters + Laser + Tow cable
+- **Objective:** Navigate mines, gravity wells, moving asteroids, collect cargo, and land. The ultimate test.
+- **Fail condition:** Run out of fuel, HP, lose cargo, or crash
+
 ### Difficulty
 
 Selectable from the title screen settings menu.
