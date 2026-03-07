@@ -620,6 +620,13 @@ levels={
 }
 
 -------------------------------
+-- audio
+-------------------------------
+function stop_all_sfx()
+ for i=0,3 do sfx(-1,i) end
+end
+
+-------------------------------
 -- outlined text
 -------------------------------
 function cprint(t,y,c)
@@ -1059,6 +1066,7 @@ function update_play()
      score=calc_score()
      total_score+=score
      success_timer=0
+     stop_all_sfx()
      state=st_success
      sfx(4)
     end
@@ -1072,6 +1080,7 @@ function update_play()
  if not ship.alive then
   fail_timer-=1
   if fail_timer<=0 then
+   stop_all_sfx()
    state=st_fail
   end
  elseif ship.fuel<=0 then
@@ -1080,6 +1089,7 @@ function update_play()
   if spd<0.05 then
    fail_timer+=1
    if fail_timer>120 then
+    stop_all_sfx()
     state=st_fail
    end
   end
