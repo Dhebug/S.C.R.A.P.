@@ -455,22 +455,28 @@ function init_stars()
  end
 end
 
+star_dir=0 -- 0=left, 1=right
+
 function update_stars()
+ local dir=star_dir==0 and -1 or 1
  for s in all(stars) do
-  s.x-=s.spd
+  s.x+=s.spd*dir
   if s.x<0 then
    s.x=128
+   s.y=rnd(128)
+  elseif s.x>128 then
+   s.x=0
    s.y=rnd(128)
   end
  end
 end
 
 function draw_stars()
+ local dir=star_dir==0 and -1 or 1
  for s in all(stars) do
   pset(s.x,s.y,s.c)
-  -- faster stars get a small trail
   if s.spd>0.3 then
-   pset(s.x+1,s.y,5)
+   pset(s.x-dir,s.y,5)
   end
  end
 end
@@ -740,6 +746,7 @@ function _init()
  init_stars()
  load_scores()
  reverse_rot=dget(30)!=1 -- default true unless explicitly set to 1 (direct)
+ star_dir=reverse_rot and 0 or 1
  state=st_intro
  intro_timer=0
 end
@@ -796,12 +803,17 @@ end
 -------------------------------
 -- intro state
 -------------------------------
+scroll_pos=0
+
 function update_intro()
- intro_timer+=1
+ if intro_timer<200 then intro_timer+=1 end
+ scroll_pos+=0.8
+ if scroll_pos>30000 then scroll_pos=0 end
  update_stars()
  -- toggle rotation mode with left/right
  if intro_timer>60 and (btnp(0) or btnp(1)) then
   reverse_rot=not reverse_rot
+  star_dir=reverse_rot and 0 or 1
   dset(30,reverse_rot and 0 or 1)
   sfx(3)
  end
@@ -829,17 +841,17 @@ function draw_intro()
 
  if intro_timer>80 then
   print("space cleaning rules",24,36,13)
-  print("and procedures",32,44,13)
+  print("and procedures",36,44,13)
   if intro_timer>160 then
-    print("9TH eDITION",38,51,14)
+    print("9TH eDITION",42,51,14)
    end
  end
 
  if intro_timer>60 then
   local mode=reverse_rot and "steering" or "direct"
-  print("<> rotation: "..mode,18,74,6)
+  print("<> rotation: "..mode,22,74,6)
   if flr(frame/15)%2==0 then
-   print("engage controls",28,98,11)
+   print("engage controls",36,98,11)
   end
  end
 
@@ -847,7 +859,7 @@ function draw_intro()
  if intro_timer>60 then
   local scroll_txt="(c) 2126 sPACE cLEANING aDVANCED mANAGEMENT (s.c.a.m) - tHIS TRAINING SIMULATOR IS PROVIDED EXCLUSIVELY TO sPACE cLEANERS uNLICENSED mEMBERS (s.c.u.m.) FOR CERTIFICATION PURPOSES ONLY. aNY UNAUTHORIZED USE, DUPLICATION, REVERSE ENGINEERING, INTELLECTUAL PROPERTY THEFT, FUN, ENJOYMENT OR DISTRIBUTION OF THIS PRODUCT CAN AND WILL RESULT IN DISCIPLINARY PROCEDURES, DEMOTION TO ASTEROID SCRUBBING DUTY, AND/OR EJECTION INTO THE NEAREST BLACK HOLE. S.C.A.M. ACCEPTS NO LIABILITY FOR INJURIES, EXISTENTIAL DREAD, OR SPONTANEOUS COMBUSTION OCCURRING DURING TRAINING. aLL COMPLAINTS SHOULD BE FILED IN TRIPLICATE AND LAUNCHED INTO THE SUN.                                   "
   local tw=#scroll_txt*4
-  local scroll_x=128-((intro_timer-40)*0.8)%tw
+  local scroll_x=128-scroll_pos%tw
   print(scroll_txt,scroll_x,122,5)
  end
 end
