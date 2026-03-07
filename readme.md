@@ -107,6 +107,8 @@ After completing (or failing) all levels, the player enters a 3-letter name and 
 | 5 | Cable detach |
 | 6 | Error buzzer (disabled control pressed) |
 | 7 | UI confirm bloop (engage controls) |
+| 8 | Main thruster whoosh (looping, channel 3) |
+| 9 | Lateral thruster whoosh (looping, channel 2) |
 
 ### Game Jam Modifiers
 

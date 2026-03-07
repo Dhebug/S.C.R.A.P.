@@ -55,7 +55,9 @@ function init_ship(x,y,ang)
   ammo=10,
   cable_out=false,
   cable_tgt=nil,
-  alive=true
+  alive=true,
+  snd_main=false,
+  snd_lat=false
  }
 end
 
@@ -100,6 +102,33 @@ function update_ship()
   ship.ang-=rpwr*rdir
   ship.fuel-=0.05
   if reverse_rot then ship.thrust_l=1 else ship.thrust_r=1 end
+ end
+
+ -- main thruster sound (channel 3)
+ local main_thrust=ship.thrust_f==1 or ship.thrust_b==1
+ if main_thrust then
+  if not ship.snd_main then
+   sfx(8,3)
+   ship.snd_main=true
+  end
+ else
+  if ship.snd_main then
+   sfx(-1,3)
+   ship.snd_main=false
+  end
+ end
+ -- lateral thruster sound (channel 2)
+ local lat_thrust=ship.thrust_l==1 or ship.thrust_r==1
+ if lat_thrust then
+  if not ship.snd_lat then
+   sfx(9,2)
+   ship.snd_lat=true
+  end
+ else
+  if ship.snd_lat then
+   sfx(-1,2)
+   ship.snd_lat=false
+  end
  end
 
  -- item cycle (o button)
@@ -260,7 +289,7 @@ function fire_laser()
   dy=sa*3+ship.dy,
   life=30
  })
- sfx(2)
+ sfx(2,1)
 end
 
 function update_bullets()
@@ -270,6 +299,7 @@ function update_bullets()
   b.life-=1
   if b.life<=0 then
    del(bullets,b)
+   if #bullets==0 then sfx(-1,1) end
   else
    -- check obstacle collision
    for ob in all(obstacles) do
@@ -278,6 +308,7 @@ function update_bullets()
     if ddx*ddx+ddy*ddy<ob.r*ob.r then
      ob.hp-=1
      del(bullets,b)
+     if #bullets==0 then sfx(-1,1) end
      if ob.hp<=0 then
       -- destroy obstacle
       for i=1,8 do
@@ -905,12 +936,29 @@ function draw_intro()
  print("\\__ \\ (_||   / / _ \\|  _/",c)
  print("|___/\\___|_|_\\/_/ \\_\\_|",c)
 
- if intro_timer>80 then
-  print("space cleaning rules",24,36,13)
-  print("and procedures",36,44,13)
-  if intro_timer>160 then
-    print("9TH eDITION",42,51,14)
-   end
+ -- cycle between title info and highscores
+ local show_scores=intro_timer>200 and flr(frame/300)%2==1 and #hi_names>0
+
+ if show_scores then
+  -- show highscores
+  print("NAME  SCORE  LEVEL",24,38,6)
+  line(20,45,108,45,5)
+  for i=1,min(#hi_names,5) do
+   local y=48+(i-1)*10
+   local c=7
+   if i==1 then c=10 end
+   print(hi_names[i],28,y,c)
+   print(tostr(hi_scores[i]),56,y,c)
+   print(tostr(hi_levels[i]).."/"..max_lvl,92,y,c)
+  end
+ else
+  if intro_timer>80 then
+   print("space cleaning rules",24,36,13)
+   print("and procedures",36,44,13)
+   if intro_timer>160 then
+     print("9TH eDITION",42,51,14)
+    end
+  end
  end
 
  if intro_timer>60 then
@@ -956,24 +1004,31 @@ function draw_brief()
  -- briefing text
  print(lv.brief,14,28,7)
 
- -- controls available
- local cy=80
- print("controls:",14,cy,6)
+ -- controls available (bottom-aligned)
+ local rows=0
+ if lv.has_fwd then rows+=1 end
+ if lv.has_rot then rows+=1 end
+ if lv.has_items then rows+=1 end
+ local sep_y=115-rows*10-3
+ line(14,sep_y,114,sep_y,13)
+ local cy=sep_y+(118-sep_y-rows*10)/2+2
  if lv.has_fwd then
-  spr(0,14,cy+8)
-  spr(1,23,cy+8)
-  print(": thrust/brake",33,cy+9,13)
+  spr(0,14,cy)
+  spr(1,23,cy)
+  print(": thrust/brake",33,cy+1,13)
+  cy+=10
  end
  if lv.has_rot then
-  spr(2,14,cy+18)
-  spr(3,23,cy+18)
-  print(": rotate",33,cy+19,13)
+  spr(2,14,cy)
+  spr(3,23,cy)
+  print(": rotate",33,cy+1,13)
+  cy+=10
  end
  if lv.has_items then
-  spr(4,14,cy+28)
-  print(":cycle",23,cy+29,13)
-  spr(5,52,cy+28)
-  print(":use",61,cy+29,13)
+  spr(4,14,cy)
+  print(":cycle",23,cy+1,13)
+  spr(5,52,cy)
+  print(":use",61,cy+1,13)
  end
 
  if brief_timer>30 and flr(frame/15)%2==0 then
@@ -1380,3 +1435,5 @@ __sfx__
 000300000075003750067500975006750037500075000750007500075000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000000000000000
 000200001035010350103501035010350103500e3500e3500e3500e3500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000800001805018050240500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0004000418640186401864018640186401864018640186400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0004000420630206302063020630206302063020630206300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
