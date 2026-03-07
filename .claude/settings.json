@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Projects/Website/www_osdk/_scrap/**)",
+      "Bash(\"C:/Program Files \\(x86\\)/PICO-8/pico8.exe\" \"d:/Git/pico8/scrap/scrap.p8\" -export \"C:/Projects/Website/www_osdk/_scrap/scrap.html\")"
+    ]
+  }
+}
