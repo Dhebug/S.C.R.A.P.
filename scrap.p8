@@ -568,6 +568,25 @@ levels={
 }
 
 -------------------------------
+-- outlined text
+-------------------------------
+function cprint(t,y,c)
+ print(t,64-#t*2,y,c)
+end
+
+function coprint(t,y,c,oc)
+ local x=64-#t*2
+ for dx=-1,1 do
+  for dy=-1,1 do
+   if dx!=0 or dy!=0 then
+    print(t,x+dx,y+dy,oc)
+   end
+  end
+ end
+ print(t,x,y,c)
+end
+
+-------------------------------
 -- chrome panel
 -------------------------------
 function draw_panel(x0,y0,x1,y1)
@@ -773,7 +792,7 @@ function _init()
  state=st_intro
  intro_timer=0
  --cheat: uncomment to skip to a level
- state=st_brief lvl=3
+ --state=st_brief lvl=3
 end
 
 prev_state=-1
@@ -878,7 +897,7 @@ function draw_intro()
   spr(3,31,73)
   print("rotation: "..mode,41,74,6)
   if flr(frame/15)%2==0 then
-   print("engage controls",36,98,11)
+   coprint("engage controls",98,11,0)
   end
  end
 
@@ -906,7 +925,7 @@ function draw_brief()
 
  draw_panel(8,8,120,120)
 
- print("test "..lvl..": "..lv.title,14,14,11)
+ coprint("test "..lvl..": "..lv.title,14,10,0)
  print("",14,26)
  -- draw line
  line(14,23,114,23,13)
@@ -935,7 +954,7 @@ function draw_brief()
  end
 
  if brief_timer>30 and flr(frame/15)%2==0 then
-  print("engage controls",18,112,11)
+  coprint("engage controls",122,11,0)
  end
 end
 
@@ -1037,12 +1056,12 @@ function draw_success()
 
  draw_panel(20,40,108,80)
 
- print("test passed!",36,46,11)
+ coprint("test passed!",46,11,0)
  print("score: +"..score,38,56,7)
  print("total: "..total_score,38,64,13)
 
  if success_timer>60 and flr(frame/15)%2==0 then
-  print("engage controls",40,72,6)
+  coprint("engage controls",72,11,0)
  end
 end
 
@@ -1068,16 +1087,18 @@ function draw_fail()
 
  draw_panel(20,35,108,90)
 
- print("test failed!",36,41,8)
+ coprint("test failed!",41,8,0)
 
  if ship.fuel<=0 then
-  print("out of fuel",38,52,7)
+  cprint("out of fuel",52,7)
  else
-  print("ship destroyed",32,52,7)
+  cprint("ship destroyed",52,7)
  end
 
- print("o: retry",44,68,11)
- print("x: abort",44,78,8)
+ spr(4,44,67)
+ print(": retry",53,68,11)
+ spr(5,44,77)
+ print(": abort",53,78,8)
 end
 
 -------------------------------
@@ -1112,11 +1133,12 @@ end
 function draw_namein()
  draw_panel(15,30,113,95)
 
- print("certification",34,36,lvl>=max_lvl and 11 or 8)
+ local cc=lvl>=max_lvl and 11 or 8
+ coprint("certification",36,cc,0)
  if lvl>=max_lvl then
-  print("complete!",42,44,11)
+  coprint("complete!",44,11,0)
  else
-  print("incomplete",40,44,8)
+  coprint("incomplete",44,8,0)
  end
 
  print("total score: "..total_score,28,56,7)
@@ -1147,8 +1169,8 @@ end
 function draw_scores()
  draw_panel(10,10,118,118)
 
- print("s.c.r.a.p.",38,16,11)
- print("hall of fame",36,24,13)
+ coprint("s.c.r.a.p.",16,10,0)
+ coprint("hall of fame",24,13,0)
  line(20,32,108,32,13)
 
  print("name  score  level",24,38,6)
@@ -1168,7 +1190,7 @@ function draw_scores()
  end
 
  if flr(frame/15)%2==0 then
-  print("engage controls",32,110,6)
+  coprint("engage controls",110,11,0)
  end
 end
 
