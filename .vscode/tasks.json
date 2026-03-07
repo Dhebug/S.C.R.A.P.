@@ -14,6 +14,15 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Export PICO-8 HTML",
+            "type": "shell",
+            "command": "cd ${workspaceFolder} && \"C:\\Program Files (x86)\\PICO-8\\pico8.exe\" ${workspaceFolder}/scrap.p8 -export C:/Projects/Website/www_osdk/_scrap/scrap.html",
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": []
         }
     ]
 }
