@@ -445,17 +445,33 @@ stars={}
 
 function init_stars()
  stars={}
- for i=1,40 do
+ for i=1,50 do
+  local spd=0.1+rnd(0.4)
   add(stars,{
    x=rnd(128),y=rnd(128),
-   c=rnd()>0.7 and 7 or (rnd()>0.5 and 6 or 5)
+   spd=spd,
+   c=spd>0.3 and 7 or (spd>0.2 and 6 or 5)
   })
+ end
+end
+
+function update_stars()
+ for s in all(stars) do
+  s.x-=s.spd
+  if s.x<0 then
+   s.x=128
+   s.y=rnd(128)
+  end
  end
 end
 
 function draw_stars()
  for s in all(stars) do
   pset(s.x,s.y,s.c)
+  -- faster stars get a small trail
+  if s.spd>0.3 then
+   pset(s.x+1,s.y,5)
+  end
  end
 end
 
@@ -782,6 +798,7 @@ end
 -------------------------------
 function update_intro()
  intro_timer+=1
+ update_stars()
  -- toggle rotation mode with left/right
  if intro_timer>60 and (btnp(0) or btnp(1)) then
   reverse_rot=not reverse_rot
@@ -805,26 +822,33 @@ function draw_intro()
  end
 
  -- ascii art (all at x=14 for alignment)
- print("   ___  ___ ___    _   ___",14,10,c)
- print("  / __|/ __| _ \\  /_\\ | _ \\",14,17,c)
- print("  \\__ \\ (_||   / / _ \\|  _/",14,24,c)
- print("  |___/\\___|_|_\\/_/ \\_\\_|",14,31,c)
+ print(" ___  ___ ___    _   ___",14,10,c)
+ print("/ __|/ __| _ \\  /_\\ | _ \\",c)
+ print("\\__ \\ (_||   / / _ \\|  _/",c)
+ print("|___/\\___|_|_\\/_/ \\_\\_|",c)
 
- if intro_timer>20 then
-  print("space cleaning rules",24,46,13)
-  print("and procedures",32,54,13)
+ if intro_timer>80 then
+  print("space cleaning rules",24,36,13)
+  print("and procedures",32,44,13)
+  if intro_timer>160 then
+    print("9TH eDITION",38,51,14)
+   end
  end
 
  if intro_timer>60 then
   local mode=reverse_rot and "steering" or "direct"
-  print("<> rotation: "..mode,18,84,6)
+  print("<> rotation: "..mode,18,74,6)
   if flr(frame/15)%2==0 then
    print("engage controls",28,98,11)
   end
  end
 
- if intro_timer>40 then
-  print("(c) 2126 s.c.a.m.",28,120,5)
+ -- scrolling legal ticker
+ if intro_timer>60 then
+  local scroll_txt="(c) 2126 sPACE cLEANING aDVANCED mANAGEMENT (s.c.a.m) - tHIS TRAINING SIMULATOR IS PROVIDED EXCLUSIVELY TO sPACE cLEANERS uNLICENSED mEMBERS (s.c.u.m.) FOR CERTIFICATION PURPOSES ONLY. aNY UNAUTHORIZED USE, DUPLICATION, REVERSE ENGINEERING, INTELLECTUAL PROPERTY THEFT, FUN, ENJOYMENT OR DISTRIBUTION OF THIS PRODUCT CAN AND WILL RESULT IN DISCIPLINARY PROCEDURES, DEMOTION TO ASTEROID SCRUBBING DUTY, AND/OR EJECTION INTO THE NEAREST BLACK HOLE. S.C.A.M. ACCEPTS NO LIABILITY FOR INJURIES, EXISTENTIAL DREAD, OR SPONTANEOUS COMBUSTION OCCURRING DURING TRAINING. aLL COMPLAINTS SHOULD BE FILED IN TRIPLICATE AND LAUNCHED INTO THE SUN.                                   "
+  local tw=#scroll_txt*4
+  local scroll_x=128-((intro_timer-40)*0.8)%tw
+  print(scroll_txt,scroll_x,122,5)
  end
 end
 
