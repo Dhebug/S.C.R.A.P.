@@ -804,7 +804,7 @@ end
 -------------------------------
 intro_timer=0
 intro_cycle=0
-intro_show_scores=false
+intro_page=0
 brief_timer=0
 success_timer=0
 fail_timer=0
@@ -933,7 +933,7 @@ function _init()
  state=st_intro
  intro_timer=0
  intro_cycle=0
- intro_show_scores=false
+ intro_page=0
  --cheat: uncomment to skip to a level
  --state=st_brief lvl=4
 end
@@ -996,8 +996,17 @@ function update_intro()
  if intro_timer<200 then intro_timer+=1 end
  if intro_timer>=200 then
   intro_cycle+=1
-  if intro_cycle>=300 and #hi_names>0 then
-   intro_show_scores=not intro_show_scores
+  if intro_cycle>=300 then
+   -- cycle: 0=title -> 1=scores -> 2=credits -> 0
+   if intro_page==0 and #hi_names>0 then
+    intro_page=1
+   elseif intro_page==0 then
+    intro_page=2
+   elseif intro_page==1 then
+    intro_page=2
+   else
+    intro_page=0
+   end
    intro_cycle=0
   end
  end
@@ -1008,21 +1017,21 @@ function update_intro()
   -- any input resets cycle timer and shows menu
   if any_btnp() then
    intro_cycle=0
-   if intro_show_scores then
-    intro_show_scores=false
+   if intro_page!=0 then
+    intro_page=0
    end
   end
   -- menu navigation
-  if not intro_show_scores and btnp(2) then
+  if intro_page==0 and btnp(2) then
    menu_sel=max(0,menu_sel-1)
    sfx(3)
   end
-  if not intro_show_scores and btnp(3) then
+  if intro_page==0 and btnp(3) then
    menu_sel=min(1,menu_sel+1)
    sfx(3)
   end
   -- change selected option
-  if not intro_show_scores and (btnp(0) or btnp(1)) then
+  if intro_page==0 and (btnp(0) or btnp(1)) then
    if menu_sel==0 then
     reverse_rot=not reverse_rot
     star_dir=reverse_rot and 0 or 1
@@ -1057,7 +1066,7 @@ function draw_intro()
  print("\\__ \\ (_||   / / _ \\|  _/",c)
  print("|___/\\___|_|_\\/_/ \\_\\_|",c)
 
- if intro_show_scores then
+ if intro_page==1 then
   -- show highscores
   local dlet={"i","e","m","c"}
   print("name",24,48,6)
@@ -1075,6 +1084,21 @@ function draw_intro()
    local di=flr(hi_diffs[i])%4+1
    print(dlet[di],100,y,c)
   end
+ elseif intro_page==2 then
+  -- credits
+  cprint("credits",36,13)
+  line(20,44,108,44,5)
+  cprint("brainstorming",48,6)
+  print("  hENRIK eNGEL",36,56,7)
+  print("  iDA pETTERSEN",36,62,7)
+  print("  mICKAEL pOINTIER",36,68,7)
+  print("  sOREN jENSEN",36,74,7)
+  print("  tHOMAS mUNDAL",36,80,7)
+  line(20,87,108,87,5)
+  print("cODE, gFX, sFX",36,91,6)
+  print("  cLAUDE oPUS",36,97,7)
+  print("pROMPTING & tESTING",36,105,6)
+  print("  mICKAEL pOINTIER",36,111,7)
  else
   if intro_timer>80 then
    print("space cleaning rules",24,36,13)
@@ -1085,7 +1109,7 @@ function draw_intro()
   end
  end
 
- if intro_timer>60 and not intro_show_scores then
+ if intro_timer>60 and intro_page==0 then
   cprint("sETTINGS:",68,6)
   -- rotation option
   local rc=menu_sel==0 and 7 or 5
@@ -1475,7 +1499,7 @@ function update_scores()
   state=st_intro
   intro_timer=0
  intro_cycle=0
- intro_show_scores=false
+ intro_page=0
  end
 end
 
