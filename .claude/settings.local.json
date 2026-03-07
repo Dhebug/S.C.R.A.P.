@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(code --list-extensions)",
+      "Read(//c/Users/Mike/.vscode/extensions/**)",
+      "Read(//c/Users/Mike/AppData/Roaming/Code/User/**)",
+      "Bash(\"C:/Program Files \\(x86\\)/PICO-8/pico8.exe\" -h)",
+      "Read(//c/Users/Mike/AppData/Roaming/pico-8/**)"
+    ]
+  }
+}

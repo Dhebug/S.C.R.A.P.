@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run PICO-8",
+            "type": "process",
+            "command": "C:\\Program Files (x86)\\PICO-8\\pico8.exe",
+            "args": ["-run", "${workspaceFolder}/scrap.p8"],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
