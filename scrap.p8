@@ -1012,8 +1012,8 @@ levels={
    init_land(400,80)
    reset_world()
    obstacles={
-    {x=280,y=100,r=6,hp=diff_hp(2),dx=0,dy=0.15},
-    {x=180,y=200,r=6,hp=diff_hp(2),dx=0,dy=-0.15}
+    {x=280,y=100,r=6,hp=diff_hp(2),dx=0,dy=0.5},
+    {x=180,y=200,r=6,hp=diff_hp(2),dx=0,dy=-0.5}
    }
    debris={
     {x=120,y=260,dx=0,dy=0,collected=false}
@@ -1043,10 +1043,10 @@ levels={
    init_land(450,150)
    reset_world()
    obstacles={
-    {x=100,y=80,r=10,hp=diff_hp(3),dx=0.2,dy=0.1},
-    {x=180,y=220,r=8,hp=diff_hp(2),dx=-0.15,dy=-0.2},
-    {x=260,y=100,r=12,hp=diff_hp(4),dx=0.1,dy=0.25},
-    {x=340,y=200,r=8,hp=diff_hp(2),dx=-0.2,dy=0.15}
+    {x=100,y=80,r=10,hp=diff_hp(3),dx=0.8,dy=0.4},
+    {x=180,y=220,r=8,hp=diff_hp(2),dx=-0.6,dy=-0.7},
+    {x=260,y=100,r=12,hp=diff_hp(4),dx=0.5,dy=0.9},
+    {x=340,y=200,r=8,hp=diff_hp(2),dx=-0.7,dy=0.5}
    }
    fuel_pods={
     {x=200,y=150,amt=15},
@@ -1074,8 +1074,8 @@ levels={
    init_land(550,60)
    reset_world()
    obstacles={
-    {x=150,y=250,r=10,hp=diff_hp(3),dx=0.1,dy=-0.1},
-    {x=350,y=180,r=8,hp=diff_hp(2),dx=-0.15,dy=0.1}
+    {x=150,y=250,r=10,hp=diff_hp(3),dx=0.6,dy=-0.5},
+    {x=350,y=180,r=8,hp=diff_hp(2),dx=-0.5,dy=0.4}
    }
    debris={
     {x=100,y=200,dx=0,dy=0,collected=false},
@@ -1478,7 +1478,7 @@ function update_intro()
     star_dir=reverse_rot and 0 or 1
     dset(30,reverse_rot and 0 or 1)
    elseif menu_sel==1 then
-    difficulty=(difficulty+1)%4
+    difficulty=(difficulty+(btnp(1) and 1 or -1))%4
     dset(31,difficulty)
    end
    sfx(3)
@@ -1557,7 +1557,7 @@ function draw_intro()
   end
  end
  if intro_timer>60 and flr(frame/30)%2==0 then
-  coprint("engage controls",114,11,0)
+  coprint("press z/x",114,11,0)
  end
 
  -- scrolling legal ticker
@@ -1621,7 +1621,7 @@ function draw_brief()
  end
 
  if brief_timer>30 and flr(frame/30)%2==0 then
-  coprint("engage controls",122,11,0)
+  coprint("press z/x",122,11,0)
  end
 end
 
@@ -1824,7 +1824,7 @@ function draw_success()
  print("TOTAL: "..total_score,38,64,13)
 
  if success_timer>60 and flr(frame/30)%2==0 then
-  coprint("engage controls",72,11,0)
+  coprint("press z/x",72,11,0)
  end
 end
 
@@ -1967,7 +1967,7 @@ function draw_scores()
  end
 
  if flr(frame/30)%2==0 then
-  coprint("engage controls",110,11,0)
+  coprint("press z/x",110,11,0)
  end
 end
 
