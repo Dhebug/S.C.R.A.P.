@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S.C.R.A.P. — Space Cleaning Rules And Procedures</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    color: #ccc;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 {
+    color: #ff77a8;
+    font-size: 2em;
+    margin-bottom: 4px;
+    letter-spacing: 0.15em;
+  }
+  .subtitle {
+    color: #7e7e7e;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+  }
+  .game-frame {
+    border: 2px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 512px;
+    height: 512px;
+    max-width: 95vw;
+    max-height: 95vw;
+  }
+  .game-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .controls {
+    margin-top: 16px;
+    color: #7e7e7e;
+    font-size: 0.8em;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .controls span { color: #ffa300; }
+  .info {
+    margin-top: 24px;
+    max-width: 512px;
+    font-size: 0.8em;
+    line-height: 1.6;
+    color: #555;
+    text-align: center;
+  }
+  a { color: #ff77a8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .links {
+    margin-top: 16px;
+    font-size: 0.85em;
+  }
+  .links a { margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<h1>S.C.R.A.P.</h1>
+<p class="subtitle">Space Cleaning Rules And Procedures</p>
+
+<div class="game-frame">
+  <iframe src="exported/scrap.html" allowfullscreen></iframe>
+</div>
+
+<div class="controls">
+  <span>Arrows</span> Move &nbsp;|&nbsp;
+  <span>Z/C</span> Cycle weapon &nbsp;|&nbsp;
+  <span>X/V</span> Fire / Use
+</div>
+
+<div class="links">
+  <a href="https://github.com/Dhebug/S.C.R.A.P.">GitHub Repository</a> |
+  <a href="https://github.com/Dhebug/S.C.R.A.P./blob/main/documentation/game_manual.md">Game Manual</a>
+</div>
+
+<div class="info">
+  A PICO-8 game built entirely by AI (Claude Opus 4.6) for the Funcom Game Jam 2026.<br>
+  Theme: Space &nbsp;|&nbsp; 10 levels &nbsp;|&nbsp; ~8112 / 8192 tokens used<br>
+  <br>
+  <em>"Making space cleaner, one unlicensed trainee at a time."</em><br>
+  &mdash; S.C.A.M. (Space Cleaning Advanced Management)
+</div>
+
+</body>
+</html>
