@@ -5,6 +5,10 @@ A PICO-8 game built entirely by AI for the Funcom Game Jam 2026.
 
 **[Play S.C.R.A.P. in your browser](https://dhebug.github.io/S.C.R.A.P./)**
 
+### Presentation Video
+
+[![S.C.R.A.P. — Game Jam Presentation](https://img.youtube.com/vi/KIfgzbnTDzY/0.jpg)](https://www.youtube.com/watch?v=KIfgzbnTDzY)
+
 ---
 
 ## About the Project
