@@ -81,7 +81,6 @@ S.C.R.A.P. qualifies for the following jam modifiers:
 - [Presentation Speech](documentation/presentation_speech.md) — The 10-minute game jam presentation, written by Claude Sonnet 4.6
 - [The Mistaken Identity Incident](documentation/mistaken_identity.md) — What happens when one AI model presents another's work
 - [Session Log](documentation/session_log.md) — Full development session transcript
-- [TTS/Avatar Options](documentation/presentation_tts_options.md) — Research on text-to-speech and avatar video services used for the presentation
 
 ## Running Locally
 
